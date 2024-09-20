@@ -1,4 +1,4 @@
-using Phylotrajectories, Random
+using Phylotrajectories, MolecularEvolution, Random
 using Test
 
 @testset "Phylotrajectories.jl" begin
@@ -30,5 +30,55 @@ using Test
             max_cycles = 10,
         )
         @test LL1 ≈ -8785.964192745085
+    end
+
+    @testset "simulations" begin
+        Random.seed!(4321)
+        n_cell_types = 10
+        n_clonotypes = 10
+        n_cells = 100 * n_cell_types * n_clonotypes
+        n(t) = (10 * n_cell_types) / (1 + exp(t - 10))
+        tree = sim_tree(n_cell_types, n, n_cell_types / 5, mutation_rate = 0.05)
+        initial_partition = GaussianPartition(0.0, 0.0)
+        default_BM_model = BrownianMotion(-0.3, 1.5)
+
+        #Bias model
+        bias_clonotype = 3
+        towards_cluster = 1
+        pos_bias_BM_model = BrownianMotion(1.5, 1.5)
+        neg_bias_BM_model = BrownianMotion(-10.0, 1.5)
+        function bias_model(i)
+            if i != bias_clonotype
+                return default_BM_model
+            end
+            bias_branches =
+                Set(Phylotrajectories.getnode2rootpath(getleaflist(tree)[towards_cluster]))
+            d = Dict{FelNode,BrownianMotion}()
+            for n in getnodelist(tree)
+                if n ∈ bias_branches
+                    d[n] = pos_bias_BM_model
+                else
+                    d[n] = neg_bias_BM_model
+                end
+            end
+            return n::FelNode -> [d[n]]
+        end
+
+        cluster_names, count_matrix = sim_count_matrix(
+            tree,
+            n_clonotypes,
+            n_cells,
+            initial_partition,
+            default_BM_model,
+        )
+        cluster_names, count_matrix = sim_count_matrix(
+            tree,
+            n_clonotypes,
+            n_cells,
+            initial_partition,
+            [BrownianMotion(-0.3, i / 2) for i = 1:n_clonotypes],
+        )
+        cluster_names, count_matrix =
+            sim_count_matrix(tree, n_clonotypes, n_cells, initial_partition, bias_model)
     end
 end
