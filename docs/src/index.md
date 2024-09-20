@@ -4,7 +4,7 @@ CurrentModule = Phylotrajectories
 
 # Phylotrajectories
 
-Documentation for [Phylotrajectories](https://github.com/nossleinad/Phylotrajectories.jl).
+Documentation for [Phylotrajectories](https://github.com/MurrellGroup/Phylotrajectories.jl).
 
 ```@index
 ```
