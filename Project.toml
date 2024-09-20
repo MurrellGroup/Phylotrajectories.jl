@@ -14,11 +14,18 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 MolecularEvolution = "0.2"
+Distributions = "0.25"
+Plots = "1"
+DataFrames = "1"
+CSV = "0.10"
+StatsBase = "0.34"
+Phylo = "0.5"
 julia = "1.6.7"
 
 [extras]
+MolecularEvolution = "9f975960-e239-4209-8aa0-3d3ad5a82892"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Random", "Test"]
+test = ["MolecularEvolution", "Random", "Test"]
