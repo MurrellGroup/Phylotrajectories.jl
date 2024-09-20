@@ -86,7 +86,6 @@ function tree_inference(
         title = "Starting Tree",
     )
 
-    println("Starting LL: ", log_likelihood!(newt, model))
 
     #Set the parent message.
     #This sets the Q states that correspond to low counts to have some probability mass at the root.
@@ -94,6 +93,8 @@ function tree_inference(
     #We might want to do something a bit more elegant, and actually try and learn these quentities, but the signal might not be there.
     thresh_ind = findfirst(states .> 1)
     newt.parent_message[1].state[1:thresh_ind, :] .= 1 / sum(thresh_ind)
+
+    println("Starting LL: ", log_likelihood!(newt, model))
 
     #Optimize the tree topology:
     @time for i = 1:max_cycles #Needs a stopping condition check. I should add a "topology only" search to MolecularEvolution.jl...
