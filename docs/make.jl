@@ -17,7 +17,7 @@ makedocs(;
         edit_link = "main",
         assets = String[],
     ),
-    pages = ["Home" => "index.md"],
+    pages = ["Home" => "index.md", "Simulate a count matrix" => "simulations.md"],
 )
 
 deploydocs(; repo = "github.com/nossleinad/Phylotrajectories.jl", devbranch = "main")
