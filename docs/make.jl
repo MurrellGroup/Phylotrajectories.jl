@@ -13,11 +13,11 @@ makedocs(;
     authors = "nossleinad <maximilian.danielsson@gmail.com> and contributors",
     sitename = "Phylotrajectories.jl",
     format = Documenter.HTML(;
-        canonical = "https://nossleinad.github.io/Phylotrajectories.jl",
+        canonical = "https://MurrellGroup.github.io/Phylotrajectories.jl",
         edit_link = "main",
         assets = String[],
     ),
-    pages = ["Home" => "index.md"],
+    pages = ["Home" => "index.md", "Simulate a count matrix" => "simulations.md"],
 )
 
-deploydocs(; repo = "github.com/nossleinad/Phylotrajectories.jl", devbranch = "main")
+deploydocs(; repo = "github.com/MurrellGroup/Phylotrajectories.jl", devbranch = "main")
