@@ -119,5 +119,5 @@ function tree_inference(
         push!(LLs, LL)
     end
 
-    return ML_newt, model, states, MLL, var(LLs)
+    return ML_newt, model, states, MLL, LLs
 end

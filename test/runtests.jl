@@ -18,7 +18,7 @@ using Test
     @testset "inference" begin
         _, cluster_names, count_matrix = import_count_matrix("data/Clone_counts_HDM.csv")
         Random.seed!(1234)
-        newtree1, model1, states1, LL1, sample_var = tree_inference(
+        newtree1, model1, states1, LL1, LLs1 = tree_inference(
             cluster_names,
             count_matrix,
             jump = 0.1,
