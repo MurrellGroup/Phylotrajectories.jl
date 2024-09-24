@@ -35,7 +35,7 @@ clono_info, cluster_names, count_matrix = import_count_matrix("data/Clone_counts
 
 ## Performing inference
 ```julia
-newtree, model, states, LL = tree_inference(cluster_names, count_matrix)
+newtree, model, states, LL, sample_var = tree_inference(cluster_names, count_matrix)
 ```
 
 The log-likelihood of the initial random tree is `-9600` and the log-likelihood, `LL`, of the Maximum likelihood tree `newtree` is `-8900`.

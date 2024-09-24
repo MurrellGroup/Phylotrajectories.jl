@@ -18,7 +18,7 @@ using Test
     @testset "inference" begin
         _, cluster_names, count_matrix = import_count_matrix("data/Clone_counts_HDM.csv")
         Random.seed!(1234)
-        newtree1, model1, states1, LL1 = tree_inference(
+        newtree1, model1, states1, LL1, sample_var = tree_inference(
             cluster_names,
             count_matrix,
             jump = 0.1,
@@ -30,6 +30,19 @@ using Test
             max_cycles = 10,
         )
         @test LL1 ≈ -8785.964192745085
+
+        tree_inference(
+            cluster_names,
+            count_matrix,
+            jump = 0.1,
+            a = 1.0,
+            b = 1.0,
+            Ne = 1.0,
+            rate = 50.0,
+            start_branch_length = 0.1,
+            max_cycles = 10,
+            n_random_trees = 2,
+        )
     end
 
     @testset "simulations" begin

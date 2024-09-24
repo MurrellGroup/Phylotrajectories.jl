@@ -41,6 +41,7 @@ function tree_inference(
     rate = 10.0,
     start_branch_length = 0.1,
     max_cycles = 10,
+    n_random_trees = 1,
 )
     @assert size(cluster_names, 1) == size(cluster_clono_matrix, 1)
     lowest_average = minimum(mean(cluster_clono_matrix, dims = 2)) # mean per leaves -> minimum
@@ -51,61 +52,72 @@ function tree_inference(
     message_template =
         [CustomDiscretePartition(length(states), size(cluster_clono_matrix)[2])]
 
-    #Random starting tree
-    newt = sim_tree(size(cluster_clono_matrix)[1], Ne, rate)
-    internal_message_init!(newt, message_template)
+    LLs = Vector{Float64}()
+    ML_newt = FelNode()
+    MLL = -Inf
+    for _ = 1:n_random_trees
+        #Random starting tree
+        newt = sim_tree(size(cluster_clono_matrix)[1], Ne, rate)
+        internal_message_init!(newt, message_template)
 
-    #Set the leaf names from the imported count matrix, and init the partitions based on the counts there
-    for (i, n) in enumerate(reverse(getleaflist(newt)))
-        n.name = cluster_names[i]
-        poisson_partition!(n.message[1], states, cluster_clono_matrix[i, :])
-    end
-
-    i = 1
-    for n in getnodelist(newt)
-        n.nodeindex = i
-        if !MolecularEvolution.isroot(n)
-            n.branchlength = start_branch_length
+        #Set the leaf names from the imported count matrix, and init the partitions based on the counts there
+        for (i, n) in enumerate(reverse(getleaflist(newt)))
+            n.name = cluster_names[i]
+            poisson_partition!(n.message[1], states, cluster_clono_matrix[i, :])
         end
 
-        i += 1
+        i = 1
+        for n in getnodelist(newt)
+            n.nodeindex = i
+            if !MolecularEvolution.isroot(n)
+                n.branchlength = start_branch_length
+            end
+
+            i += 1
+        end
+
+        ladderize!(newt)
+        phylo_tree = get_phylo_tree(newt)
+        plot(
+            phylo_tree,
+            showtips = true,
+            tipfont = 6,
+            markersize = 4.0,
+            markerstrokewidth = 0,
+            margins = 1Plots.cm,
+            linewidth = 1.5,
+            markercolor = :black,
+            size = (500, 500),
+            title = "Starting Tree",
+        )
+
+
+        #Set the parent message.
+        #This sets the Q states that correspond to low counts to have some probability mass at the root.
+        #This is like an inductive bias that the root will have "naive" unexpanded cells.
+        #We might want to do something a bit more elegant, and actually try and learn these quentities, but the signal might not be there.
+        thresh_ind = findfirst(states .> 1)
+        newt.parent_message[1].state[1:thresh_ind, :] .= 1 / sum(thresh_ind)
+
+        println("Starting LL: ", log_likelihood!(newt, model))
+
+        #Optimize the tree topology:
+        @time for i = 1:max_cycles #Needs a stopping condition check. I should add a "topology only" search to MolecularEvolution.jl...
+            felsenstein_down!(newt, model)
+            nni_optim!(newt, model)
+            # println("LL: ", log_likelihood!(newt, model))
+        end
+
+        #Polish topology and branch lengths:
+        @time tree_polish!(newt, model, verbose = 0, tol = 10^-6)
+        ladderize!(newt)
+        LL = log_likelihood!(newt, model)
+        if LL > MLL
+            MLL = LL
+            ML_newt = newt
+        end
+        push!(LLs, LL)
     end
 
-    ladderize!(newt)
-    phylo_tree = get_phylo_tree(newt)
-    plot(
-        phylo_tree,
-        showtips = true,
-        tipfont = 6,
-        markersize = 4.0,
-        markerstrokewidth = 0,
-        margins = 1Plots.cm,
-        linewidth = 1.5,
-        markercolor = :black,
-        size = (500, 500),
-        title = "Starting Tree",
-    )
-
-
-    #Set the parent message.
-    #This sets the Q states that correspond to low counts to have some probability mass at the root.
-    #This is like an inductive bias that the root will have "naive" unexpanded cells.
-    #We might want to do something a bit more elegant, and actually try and learn these quentities, but the signal might not be there.
-    thresh_ind = findfirst(states .> 1)
-    newt.parent_message[1].state[1:thresh_ind, :] .= 1 / sum(thresh_ind)
-
-    println("Starting LL: ", log_likelihood!(newt, model))
-
-    #Optimize the tree topology:
-    @time for i = 1:max_cycles #Needs a stopping condition check. I should add a "topology only" search to MolecularEvolution.jl...
-        felsenstein_down!(newt, model)
-        nni_optim!(newt, model)
-        # println("LL: ", log_likelihood!(newt, model))
-    end
-
-    #Polish topology and branch lengths:
-    @time tree_polish!(newt, model, verbose = 0, tol = 10^-6)
-    ladderize!(newt)
-
-    return newt, model, states, log_likelihood!(newt, model)
+    return ML_newt, model, states, MLL, var(LLs)
 end
