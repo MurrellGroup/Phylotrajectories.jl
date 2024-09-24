@@ -29,7 +29,7 @@ using Test
             start_branch_length = 0.1,
             max_cycles = 10,
         )
-        @test LL1 ≈ -8785.964192745085
+        @test LL1 ≈ -8371.087107780682
     end
 
     @testset "simulations" begin

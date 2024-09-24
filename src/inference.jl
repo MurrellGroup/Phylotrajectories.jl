@@ -103,8 +103,18 @@ function tree_inference(
         # println("LL: ", log_likelihood!(newt, model))
     end
 
+    univariate_tol = 1e-4 #Tolerance for the GSS calls
+    a_tol = 1e-3 #Tolerance for the directional bias param
+    directional_bias_Q(a::Float64) = Q(length(states), a, 1 / a)
+    prev_a = Inf
     #Polish topology and branch lengths:
-    @time tree_polish!(newt, model, verbose = 0, tol = 10^-6)
+    while (abs(a - prev_a) > a_tol)
+        prev_a = a
+        @time tree_polish!(newt, model, verbose = 0, tol = 10^-6)
+        a = golden_section_maximize(a -> log_likelihood!(newt, GeneralCTMC(directional_bias_Q(a))), univariate_tol, 1 - univariate_tol, unit_transform, univariate_tol)
+        model = DiagonalizedCTMC(directional_bias_Q(a))
+        @show a, log_likelihood!(newt, model)
+    end
     ladderize!(newt)
 
     return newt, model, states, log_likelihood!(newt, model)
