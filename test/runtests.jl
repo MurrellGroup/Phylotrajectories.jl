@@ -94,4 +94,13 @@ using Test
         cluster_names, count_matrix =
             sim_count_matrix(tree, n_clonotypes, n_cells, initial_partition, bias_model)
     end
+
+    @testset "recombination" begin
+        cluster_names = ["Type$i" for i = 1:3]
+        count_matrix = [i * j for i = 1:4, j = 1:3]
+        recombined_cluster_names, recbomined_count_matrix =
+            recombine(cluster_names, count_matrix, "Type1", "Type3")
+        @test recombined_cluster_names == ["Type1+Type3", "Type2"]
+        @test recbomined_count_matrix == [4 2; 8 4; 12 6; 16 8]
+    end
 end
