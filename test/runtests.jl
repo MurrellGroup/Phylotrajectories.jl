@@ -18,7 +18,7 @@ using Test
     @testset "inference" begin
         _, cluster_names, count_matrix = import_count_matrix("data/Clone_counts_HDM.csv")
         Random.seed!(1234)
-        newtree1, model1, states1, LL1 = tree_inference(
+        newtree1, model1, states1, LL1, LLs1 = tree_inference(
             cluster_names,
             count_matrix,
             jump = 0.1,
@@ -30,6 +30,19 @@ using Test
             max_cycles = 10,
         )
         @test LL1 ≈ -8785.96434429384
+
+        tree_inference(
+            cluster_names,
+            count_matrix,
+            jump = 0.1,
+            a = 1.0,
+            b = 1.0,
+            Ne = 1.0,
+            rate = 50.0,
+            start_branch_length = 0.1,
+            max_cycles = 10,
+            n_random_trees = 2,
+        )
     end
 
     @testset "simulations" begin
@@ -80,5 +93,14 @@ using Test
         )
         cluster_names, count_matrix =
             sim_count_matrix(tree, n_clonotypes, n_cells, initial_partition, bias_model)
+    end
+
+    @testset "recombination" begin
+        cluster_names = ["Type$i" for i = 1:3]
+        count_matrix = [i * j for i = 1:4, j = 1:3]
+        recombined_cluster_names, recbomined_count_matrix =
+            recombine(cluster_names, count_matrix, "Type1", "Type3")
+        @test recombined_cluster_names == ["Type1+Type3", "Type2"]
+        @test recbomined_count_matrix == [4 2; 8 4; 12 6; 16 8]
     end
 end
