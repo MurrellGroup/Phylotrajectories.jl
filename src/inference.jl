@@ -1,3 +1,5 @@
+const CANONICAL_JUMP = 0.3
+
 function Q(numstates, a, b)
     Qmat = zeros(numstates, numstates)
     Qmat[1, 1] = -b
@@ -34,7 +36,7 @@ Returns the ML tree, CTMC model, the discretized states over frequencies, and th
 function tree_inference(
     cluster_names::Vector{String},
     cluster_clono_matrix::Matrix{Int64};
-    jump = 0.3,
+    jump = CANONICAL_JUMP,
     a = 1.0,
     b = 1.0,
     Ne = 1.0,
@@ -47,7 +49,7 @@ function tree_inference(
     states = exp.([log(lowest_average)-0.5:jump:log(maximum(cluster_clono_matrix))+1;])
     println("Number of states ", length(states))
 
-    model = DiagonalizedCTMC(Q(length(states), a, b))
+    model = DiagonalizedCTMC(Q(length(states), a, b) .* CANONICAL_JUMP / jump)
     message_template =
         [CustomDiscretePartition(length(states), size(cluster_clono_matrix)[2])]
 
