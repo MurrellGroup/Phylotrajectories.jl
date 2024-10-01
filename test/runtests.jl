@@ -25,7 +25,7 @@ using Test
             a = 1.0,
             b = 1.0,
             Ne = 1.0,
-            rate = 50.0,
+            sample_rate = 50.0,
             start_branch_length = 0.1,
             max_cycles = 10,
         )
@@ -38,7 +38,7 @@ using Test
             a = 1.0,
             b = 1.0,
             Ne = 1.0,
-            rate = 50.0,
+            sample_rate = 50.0,
             start_branch_length = 0.1,
             max_cycles = 10,
             n_random_trees = 2,

@@ -1,7 +1,7 @@
 """
     function recombine(cluster_names::Vector{String}, count_matrix::Matrix{Int64}, dest::String, src::String)
 
-Recombines cell clusters `dest` and `src`. Returns recombined cluster names and count matrix. Here recombinination means taking a clonotype-wise sum of counts from `count_matrix`. `src` and its column in the count matrix are discarded in the recombined cluster names and count matrix respectively. `dest *= "+" * src` in the recombined cluster names.
+Recombines cell clusters `dest` and `src`. Returns recombined cluster names and count matrix. Here recombination means taking a clonotype-wise sum of counts from `count_matrix`. `src` and its column in the count matrix are discarded in the recombined cluster names and count matrix respectively. `dest *= "+" * src` in the recombined cluster names.
 
 # Example
 ```jldoctest
@@ -21,7 +21,7 @@ julia> recombined_cluster_names
  "Type1+Type3"
  "Type2"
 
-julia> recbomined_count_matrix
+julia> recombined_count_matrix
 4×2 Matrix{Int64}:
   4  2
   8  4

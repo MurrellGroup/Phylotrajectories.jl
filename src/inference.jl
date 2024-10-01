@@ -26,10 +26,17 @@ end
     tree_inference(cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64}; <keyword arguments>)
 
 Find the Maximum Likelihood tree for a count matrix `cluster_clono_matrix`.
-Returns the ML tree, CTMC model, the discretized states over frequencies, and the LL of the tree
+Returns the ML tree, CTMC model, discretized states of frequencies, LL of the ML tree, and the LLs of all initial trees.
 
 # Arguments
-...
+- `jump=1.0`: the step size between frequency states (log domain).
+- `a=1.0`: the rate of transitions to lower frequencies.
+- `b=1.0`: the rate of transitions to higher frequencies.
+- `Ne=1.0`: the initial tree's effective population size.
+- `sample_rate=10.0`: the initial tree's sample rate.
+- `start_branch_length=0.1`: the initial tree's non-root branch lengths.
+- `max_cycles=10`: the number of topology-only optimization iterations.
+- `n_random_trees`: the number of initial tree samples. 
 """
 function tree_inference(
     cluster_names::Vector{String},
@@ -38,7 +45,7 @@ function tree_inference(
     a = 1.0,
     b = 1.0,
     Ne = 1.0,
-    rate = 10.0,
+    sample_rate = 10.0,
     start_branch_length = 0.1,
     max_cycles = 10,
     n_random_trees = 1,
@@ -57,7 +64,7 @@ function tree_inference(
     MLL = -Inf
     for _ = 1:n_random_trees
         #Random starting tree
-        newt = sim_tree(size(cluster_clono_matrix)[1], Ne, rate)
+        newt = sim_tree(size(cluster_clono_matrix)[1], Ne, sample_rate)
         internal_message_init!(newt, message_template)
 
         #Set the leaf names from the imported count matrix, and init the partitions based on the counts there

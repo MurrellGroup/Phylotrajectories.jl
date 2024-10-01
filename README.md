@@ -14,7 +14,7 @@ TODO: show where these files can be found.
 ### Importing from a TSV file with filters
 
 ```julia
-using Phylotrajectories, MolecularEvolution
+using Phylotrajectories
 
 clono_info, cluster_names, count_matrix = import_count_matrix(
     "data/clone_data_HDM.tsv",
