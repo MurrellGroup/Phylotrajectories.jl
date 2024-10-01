@@ -14,7 +14,7 @@ julia> count_matrix = [i * j for i = 1:4, j = 1:3]
  3  6   9
  4  8  12
 
-julia> recombined_cluster_names, recbomined_count_matrix = recombine(cluster_names, count_matrix, "Type1", "Type3");
+julia> recombined_cluster_names, recombined_count_matrix = recombine(cluster_names, count_matrix, "Type1", "Type3");
 
 julia> recombined_cluster_names
 2-element Vector{String}:
