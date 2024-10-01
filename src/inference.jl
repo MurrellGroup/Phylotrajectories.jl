@@ -26,7 +26,7 @@ end
     tree_inference(cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64}; <keyword arguments>)
 
 Find the Maximum Likelihood tree for a count matrix `cluster_clono_matrix`.
-Returns the ML tree, CTMC model, discretized states of frequencies, LL of the ML tree, and the LLs of all initial trees.
+Returns the ML tree, CTMC model, discretized states of frequencies, LL of the ML tree, and the final LLs of the initial trees (see `n_random_trees`).
 
 # Arguments
 - `jump=1.0`: the step size between frequency states (log domain).
@@ -36,7 +36,7 @@ Returns the ML tree, CTMC model, discretized states of frequencies, LL of the ML
 - `sample_rate=10.0`: the initial tree's sample rate.
 - `start_branch_length=0.1`: the initial tree's non-root branch lengths.
 - `max_cycles=10`: the number of topology-only optimization iterations.
-- `n_random_trees`: the number of initial tree samples. 
+- `n_random_trees=1`: the number of initial tree samples. 
 """
 function tree_inference(
     cluster_names::Vector{String},
