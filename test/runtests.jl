@@ -29,7 +29,7 @@ using Test
             start_branch_length = 0.1,
             max_cycles = 10,
         )
-        @test LL1 ≈ -8785.96434429384
+        @test LL1 ≈ -8785.964877067909
 
         tree_inference(
             cluster_names,

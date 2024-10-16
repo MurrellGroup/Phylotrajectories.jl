@@ -1,4 +1,4 @@
-const CANONICAL_JUMP = 0.3
+const CANONICAL_JUMP = 0.1
 
 function Q(numstates, a, b)
     Qmat = zeros(numstates, numstates)
@@ -50,7 +50,8 @@ function tree_inference(
     states = exp.([log(lowest_average)-0.5:jump:log(maximum(cluster_clono_matrix))+1;])
     println("Number of states ", length(states))
 
-    model = DiagonalizedCTMC(Q(length(states), a, b) .* CANONICAL_JUMP / jump)
+    #We scale the rate matrix to account for the std of frequencies being proportional to jump (approx.)
+    model = DiagonalizedCTMC(Q(length(states), a, b) .* (CANONICAL_JUMP / (jump^2)))
     message_template =
         [CustomDiscretePartition(length(states), size(cluster_clono_matrix)[2])]
 
