@@ -39,8 +39,8 @@ Returns the ML tree, CTMC model, discretized states of frequencies, LL of the ML
 - `start_branch_length=0.1`: the initial tree's non-root branch lengths.
 - `max_cycles=10`: the number of topology-only optimization iterations.
 - `n_random_trees=1`: the number of initial tree samples. 
-- `init_state=0.6`: init_state to assign prob.
-- `value=0.1`: value around init state. 
+- `init_state_function=x -> ifelse(x < 0.1, 1.0, 0.0)`: the initial state distribution function, before normalization. Must return positive values.
+- `lowest_state_value=0.1`: the lowest state value.
 """
 function tree_inference(
     cluster_names::Vector{String},
@@ -53,12 +53,14 @@ function tree_inference(
     start_branch_length = 0.1,
     max_cycles = 10,
     n_random_trees = 1,
-    init_state=0.6,
-    value=0.1
+    init_state_function = x -> ifelse(x < 0.1, 1.0, 0.0),
+    lowest_state_value = 0.1,
 )
     @assert size(cluster_names, 1) == size(cluster_clono_matrix, 1)
     lowest_average = minimum(mean(cluster_clono_matrix, dims = 2)) # mean per leaves -> minimum
-    states = exp.([log(lowest_average)-0.5:jump:log(maximum(cluster_clono_matrix))+1;])
+    
+    states = exp.([log(lowest_state_value):jump:log(maximum(cluster_clono_matrix))+1;])
+    
     println("Number of states ", length(states))
 
     #We scale the rate matrix to account for the std of frequencies being proportional to jump (approx.)
@@ -105,39 +107,33 @@ function tree_inference(
             title = "Starting Tree",
         )
 
-
         #Set the parent message.
         #This sets the Q states that correspond to low counts to have some probability mass at the root.
         #This is like an inductive bias that the root will have "naive" unexpanded cells.
         #We might want to do something a bit more elegant, and actually try and learn these quentities, but the signal might not be there.
-        thresh_ind_first = findlast(states .< init_state-value)
-        if isnothing(thresh_ind_first)
-            thresh_ind_first = 1
-        end
-        thresh_ind_last = findfirst(states .> init_state+value)
-        println(states)
-        println(states[thresh_ind_first:thresh_ind_last, :])
+        parent_dist = init_state_function.(states)
+        parent_dist = parent_dist ./ sum(parent_dist)
+        newt.parent_message[1].state .= parent_dist
 
-        newt.parent_message[1].state[thresh_ind_first:thresh_ind_last, :] .= 1 / 50
-
-        println("Starting LL: ", log_likelihood!(newt, model))
+        #println("Starting LL: ", log_likelihood!(newt, model))
 
         #Optimize the tree topology:
         @time for i = 1:max_cycles #Needs a stopping condition check. I should add a "topology only" search to MolecularEvolution.jl...
             felsenstein_down!(newt, model)
             nni_optim!(newt, model)
-            # println("LL: ", log_likelihood!(newt, model))
         end
 
         #Polish topology and branch lengths:
         @time tree_polish!(newt, model, verbose = 0, tol = 10^-6)
         ladderize!(newt)
         LL = log_likelihood!(newt, model)
+        println("Replicate LL: ", LL)
         if LL > MLL
             MLL = LL
             ML_newt = newt
         end
         push!(LLs, LL)
+        println("Max LL: ", MLL)
     end
 
     return ML_newt, model, states, MLL, LLs
