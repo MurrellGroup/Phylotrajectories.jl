@@ -18,6 +18,12 @@ function import_count_dataframe(
     clusters_column_name::Symbol,
     cdr3_column_name::Symbol,
 )
+    # Force these to be strings for invariance purposes
+    transform!(
+        data,
+        [clone_column_name, clusters_column_name, cdr3_column_name] .=> ByRow(string),
+        renamecols = false, #Possible without this?
+    )
     # Count the occurrences of each combination of cell_type and clonotype
     count_df =
         combine(groupby(data, [clusters_column_name, clone_column_name]), nrow => :count)
