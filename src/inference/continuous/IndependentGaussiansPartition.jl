@@ -6,22 +6,22 @@ mutable struct IndependentGaussiansPartition <: MolecularEvolution.ContinuousPar
     means::Array{Float64,1}
     vars::Array{Float64,1}
     norm_consts::Array{Float64,1}
-    n::Int
-    function IndependentGaussiansPartition(means, vars, norm_consts, n)
-        @assert n == length(means) == length(vars) == length(norm_consts)
-        new(means, vars, norm_consts, n)
-    end
-    function IndependentGaussiansPartition(means, vars, n)
-        @assert n == length(means) == length(vars)
-        new(means, vars, zeros(n), n)
-    end
-    function IndependentGaussiansPartition(n)
-        new(zeros(n), ones(n), zeros(n), n)
+    counts::Array{Int64,1}
+    function IndependentGaussiansPartition(means, vars, norm_consts)
+        @assert length(means) == length(vars) == length(norm_consts)
+        new(means, vars, norm_consts)
     end
 end
 
+IndependentGaussiansPartition(means, vars) = new(means, vars, zeros(length(means)))
+
+IndependentGaussiansPartition(n) =
+    IndependentGaussiansPartition(zeros(n), ones(n), zeros(n))
+
+Base.length(g::IndependentGaussiansPartition) = length(g.means)
+
 function Base.getindex(g::IndependentGaussiansPartition, i::Int)
-    1 <= i <= g.n || throw(BoundsError(g, i))
+    1 <= i <= length(g) || throw(BoundsError(g, i))
     return g.means[i], g.vars[i], g.norm_consts[i]
 end
 function Base.setindex!(
@@ -29,7 +29,7 @@ function Base.setindex!(
     v::Tuple{Float64,Float64,Float64},
     i::Int,
 )
-    1 <= i <= g.n || throw(BoundsError(g, i))
+    1 <= i <= length(g) || throw(BoundsError(g, i))
     g.means[i] = v[1]
     g.vars[i] = v[2]
     g.norm_consts[i] = v[3]
@@ -41,8 +41,16 @@ function MolecularEvolution.copy_partition(src::IndependentGaussiansPartition)
         copy(src.means),
         copy(src.vars),
         copy(src.norm_consts),
-        src.n,
     )
+end
+
+function MolecularEvolution.copy_partition_to!(
+    dest::IndependentGaussiansPartition,
+    src::IndependentGaussiansPartition,
+)
+    dest.means .= src.means
+    dest.vars .= src.vars
+    dest.norm_consts .= src.norm_consts
 end
 
 #=
@@ -56,7 +64,7 @@ function MolecularEvolution.merge_two_gaussians(
     g1::IndependentGaussiansPartition,
     g2::IndependentGaussiansPartition,
 )
-    res_gaussians = IndependentGaussiansPartition(g1.n)
+    res_gaussians = IndependentGaussiansPartition(length(g1))
     res_gaussians.vars .= 1 ./ (1 ./ g1.vars .+ 1 ./ g2.vars)
     res_gaussians.means .=
         res_gaussians.vars .* (g1.means ./ g1.vars .+ g2.means ./ g2.vars)
@@ -68,7 +76,7 @@ function MolecularEvolution.merge_two_gaussians(
             (res_gaussians.means .^ 2 ./ res_gaussians.vars)
         )
     res_gaussians.norm_consts .+= (g1.norm_consts .+ g2.norm_consts)
-    for i = 1:g1.n
+    for i = 1:length(g1)
         #Handling some edge cases. These aren't mathematically sensible. A gaussian with "Inf" variance will behave like a 1,1,1,1 vector in discrete felsenstein.
         #To-do: update some of these so that the norm constant is properly handled, even if the variance is Inf (so it isn't exactly well-defined anyway)
         if g1.vars[i] == 0 && g2.vars[i] == 0 && g1.vars[i] != g2.vars[i]
@@ -108,9 +116,12 @@ function MolecularEvolution.site_LLs(part::IndependentGaussiansPartition)
     return part.norm_consts
 end
 
-function MolecularEvolution.gaussian_pdf(g::IndependentGaussiansPartition, x::Array{Float64,1})
+function MolecularEvolution.gaussian_pdf(
+    g::IndependentGaussiansPartition,
+    x::Array{Float64,1},
+)
     result = pdf.(Normal.(g.means, sqrt.(g.vars)), x)
-    for i = 1:g.n
+    for i = 1:length(g)
         if g.vars[i] == 0
             result[i] = Float64(x == g.means[i]) #Hokey...
         end
@@ -120,7 +131,7 @@ end
 
 #And sampling
 function MolecularEvolution.sample_partition!(partition::IndependentGaussiansPartition)
-    partition.means .= randn(partition.n) .* sqrt.(partition.vars) .+ partition.means
+    partition.means .= randn(length(partition)) .* sqrt.(partition.vars) .+ partition.means
     partition.vars .= 0.0
     partition.norm_consts .= 0.0
 end
