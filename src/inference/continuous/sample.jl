@@ -3,24 +3,61 @@
 
 A type that allows you to specify a additive proposal function. It also holds the acceptance ratio acc_ratio (acc_ratio[1] stores the number of accepts, and acc_ratio[2] stores the number of rejects).
 """
-struct FrequencySampler <: MolecularEvolution.UnivariateSampler
+struct FrequencySampler
     acc_ratio::Array{Int64,1}
-    proposal::Distribution
+    proposal::Distribution{Univariate,Continuous}
     FrequencySampler(proposal) = new(zeros(Int64, 2), proposal)
 end
 
-#Accept/reject individual samples
-#log_posterior: Array{Float64,1} -> Array{Float64,1}
-function frequencies_metropolis(
-    log_posterior,
+MolecularEvolution.proposal(modifier::FrequencySampler, curr_value::Array{Float64,1}) =
+    curr_value + rand(modifier.proposal, length(curr_value))
+MolecularEvolution.log_prior(modifier::FrequencySampler, x) = 0.0 #Constant, since, prior comes from root
+function MolecularEvolution.apply_decision(modifier::FrequencySampler, accepts::BitArray)
+    for b in accepts
+        MolecularEvolution.apply_decision(modifier, b)
+    end
+end
+#This should idiomatically be achieved by a loop or broadcasting metropolis_step over multiple functions and Float64s
+#but the driving factor for why I specialize metropolis_step is
+#it's convenient for LL to return Array{Float64,1}
+function MolecularEvolution.metropolis_step(
+    LL::Function,
     modifier::FrequencySampler,
-    curr_values::Array{Float64,1},
+    curr_value::Array{Float64,1},
 )
-    # Adding additive normal symmetrical noise to ensure the proposal function is symmetric.
-    n = length(curr_values)
-    proposals = curr_values .+ rand(modifier.proposal, n)
-    # The standard Metropolis acceptance criterion.
-    U = rand(n)
-    post_quotients = exp.(copy(log_posterior(proposals)) .- log_posterior(curr_values))
-    return ifelse.(U .<= post_quotients, proposals, curr_values)
+    prop = MolecularEvolution.proposal(modifier, curr_value)
+    accept_proposal =
+        rand(length(curr_value)) .<=
+        exp.(
+            LL(prop) .+ MolecularEvolution.log_prior(modifier, prop) .- LL(curr_value) .-
+            MolecularEvolution.log_prior(modifier, curr_value),
+        )
+    MolecularEvolution.apply_decision(modifier, accept_proposal)
+    return ifelse.(accept_proposal, prop, curr_value)
+end
+
+#Paramters [μ, ν] in ~ N(μ, exp(ν))
+struct GaussianSampler
+    acc_ratio::Array{Int64,1}
+    prior::Distribution{Multivariate,Continuous}
+    proposal::Distribution{Multivariate,Continuous}
+    GaussianSampler(prior, proposal) = new(zeros(Int64, 3), prior, proposal)
+end
+
+# Transform mean and variance to mean and log-variance 
+function tr_gaussian_params(curr_values)
+    curr_values .|> [identity, log]
+end
+
+# Inverse transform mean and log-variance to mean and variance
+function invtr_gaussian_params(tr_curr_values)
+    tr_curr_values .|> [identity, exp]
+end
+
+#Assuming that curr_values = [μ, exp(ν)]
+function MolecularEvolution.proposal(modifier::GaussianSampler, curr_values)
+    return invtr_gaussian_params(tr_gaussian_params(curr_values) .+ rand(modifier.proposal))
+end
+function MolecularEvolution.log_prior(modifier::GaussianSampler, curr_values)
+    return logpdf(modifier.prior, tr_gaussian_params(curr_values))
 end

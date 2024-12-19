@@ -22,6 +22,7 @@ function continuous_tree_inference(
     sample_rate = 10.0,
     start_branch_length = 0.1,
     samples = 10,
+    consecutive_root_samples = 10,
 )
     @assert size(cluster_names, 1) == size(cluster_clono_matrix, 1)
     model = IndependentBrownianMotion(mean_drift, 1.0)
@@ -69,29 +70,36 @@ function continuous_tree_inference(
 
     println("Starting LL: ", log_likelihood!(newt, model))
 
+    temp_messages = [copy_message(newt.message)]
     #Run the MCMC with custom leaf sampling
-    trees, LLs, =
-        metropolis_sample(newt, [model], samples, burn_in = 2000, collect_LLs = true) do tree, models
-            sample_leafs(tree, x -> models)
-            nni_optim!(tree, x -> models, selection_rule = softmax_sampler)
-            branchlength_optim!(tree, x -> models)
+    trees, LLs, = metropolis_sample(
+        newt,
+        [model],
+        samples,
+        burn_in = 2000,
+        collect_LLs = true,
+    ) do tree, models
+        sample_leafs!(temp_messages, tree, x -> models)
+        for i = 1:consecutive_root_samples
+            sample_root_distribution!(temp_messages[1], tree)
         end
+        nni_optim!(tree, x -> models, selection_rule = softmax_sampler)
+        branchlength_optim!(tree, x -> models)
+    end
 
 
     return newt, model, trees, LLs
 end
 
-function sample_leafs(
+#Have temp_messages as input so we can reuse between chain iterations
+function sample_leafs!(
+    temp_messages::Vector{Vector{T}},
     tree::FelNode,
     models;
     partition_list = 1:length(tree.message),
     sampler::FrequencySampler = FrequencySampler(Normal()),
     traversal = Iterators.reverse,
-)
-
-    temp_messages = [copy_message(tree.message)]
-    T = eltype(temp_messages[1][1])
-
+) where {T<:Partition}
     stack = [(pop!(temp_messages), tree, 1, 1, true, true)]
     while !isempty(stack)
         temp_message, node, ind, lastind, first, down = pop!(stack)
@@ -178,7 +186,7 @@ function sample_leafs(
             #-------------------
             model_list = models(node)
             fun = x -> leaf_log_posterior(x, temp_message, node, model_list)
-            frequencies = frequencies_metropolis(fun, sampler, node.message[1].means)
+            frequencies = metropolis_step(fun, sampler, node.message[1].means)
             node.message[1].means .= frequencies
             poisson_partition!(node.message[1])
             #Consider checking for improvement, and bailing if none.
@@ -209,5 +217,37 @@ function leaf_log_posterior(
     backward!(temp_message[part], node.message[part], model_list[part], node)
     combine!(temp_message[part], node.parent_message[part])
 
-    return MolecularEvolution.site_LLs(temp_message[part])
+    return copy(MolecularEvolution.site_LLs(temp_message[part]))
+end
+
+#Assumes that we've done an up pass
+function sample_root_distribution!(
+    temp_message::Vector{<:Partition},
+    tree::FelNode;
+    sampler::GaussianSampler = GaussianSampler(
+        MvNormal(zeros(2), Diagonal(ones(2))),
+        MvNormal(zeros(2), Diagonal(ones(2))),
+    ),
+)
+    LL(x) = root_LL(x, temp_message, tree)
+    gaussian_params = metropolis_step(LL, sampler, collect(tree.parent_message[1][1][1:2]))
+    set_idg!(tree.parent_message[1], gaussian_params...)
+end
+
+function root_LL(
+    gaussian_params::Array{Float64,1},
+    temp_message::Vector{<:Partition},
+    tree::FelNode,
+)
+    part = 1
+    set_idg!(temp_message[part], gaussian_params...)
+    combine!(temp_message[part], tree.message[part])
+
+    return sum(MolecularEvolution.total_LL.(temp_message))
+end
+
+function set_idg!(dest::IndependentGaussiansPartition, mean::Float64, var::Float64)
+    dest.means .= mean
+    dest.vars .= var
+    dest.norm_consts .= 0.0
 end

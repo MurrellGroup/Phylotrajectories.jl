@@ -43,6 +43,9 @@ using Test
             max_cycles = 10,
             n_random_trees = 2,
         )
+
+        newtree2, model2, trees, LLs2 =
+            Phylotrajectories.continuous_tree_inference(cluster_names, count_matrix)
         @testset "Continuous" begin
             # Init GaussianPartition and IndependentGaussiansPartition
             n = 10
@@ -50,12 +53,10 @@ using Test
             vars = vcat(0:(n-2), Inf)
             norm_consts = zeros(n)
             shuffle!(means)
-            idg1 =
-                IndependentGaussiansPartition(copy(means), copy(vars), copy(norm_consts), n)
+            idg1 = IndependentGaussiansPartition(copy(means), copy(vars), copy(norm_consts))
             gs1 = GaussianPartition.(copy(means), copy(vars), copy(norm_consts))
             shuffle!(means)
-            idg2 =
-                IndependentGaussiansPartition(copy(means), copy(vars), copy(norm_consts), n)
+            idg2 = IndependentGaussiansPartition(copy(means), copy(vars), copy(norm_consts))
             gs2 = GaussianPartition.(copy(means), copy(vars), copy(norm_consts))
 
             # Test Vector{GaussianPartition} <=> IndependentGaussiansPartition

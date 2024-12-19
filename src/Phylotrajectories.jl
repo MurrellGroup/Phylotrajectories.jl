@@ -1,6 +1,7 @@
 module Phylotrajectories
 
-using CSV, DataFrames, MolecularEvolution, StatsBase, Distributions, Phylo, Plots
+using CSV,
+    DataFrames, MolecularEvolution, StatsBase, Distributions, Phylo, Plots, LinearAlgebra
 
 include("inference/discrete/discrete.jl")
 include("inference/continuous/continuous.jl")
