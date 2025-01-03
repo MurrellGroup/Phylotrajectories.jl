@@ -34,10 +34,19 @@ clono_info, cluster_names, count_matrix = import_count_matrix("data/Clone_counts
 > This time, `clono_info` is `nothing`.
 
 ## Performing inference
+
+You can perform inference using either a discrete or continuous model:
+
 ```julia
-newtree, model, states, LL, LLs = tree_inference(cluster_names, count_matrix)
+# Using a discrete model
+model = DiscreteModel()
+newtree, model, states, LL, LLs = tree_inference(model, cluster_names, count_matrix)
+
+# Using a continuous model
+model = ContinuousModel()
+newtree, model, trees, LLs = tree_inference(model, cluster_names, count_matrix)
 ```
 
-The log-likelihood of the initial random tree is `-9600` and the log-likelihood, `LL`, of the Maximum likelihood tree `newtree` is `-8900`.
+See [`DiscreteModel`](@ref) and [`ContinuousModel`](@ref) for available model parameters.
 
 TODO: Add tree-plot fig.

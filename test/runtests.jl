@@ -18,9 +18,8 @@ using Test
     @testset "inference" begin
         _, cluster_names, count_matrix = import_count_matrix("data/Clone_counts_HDM.csv")
         Random.seed!(1234)
-        newtree1, model1, states1, LL1, LLs1 = tree_inference(
-            cluster_names,
-            count_matrix,
+
+        model = DiscreteModel(
             jump = 0.1,
             a = 1.0,
             b = 1.0,
@@ -29,11 +28,11 @@ using Test
             start_branch_length = 0.1,
             max_cycles = 10,
         )
+        newtree1, model1, states1, LL1, LLs1 =
+            tree_inference(model, cluster_names, count_matrix)
         @test LL1 ≈ -8785.964877067909
 
-        tree_inference(
-            cluster_names,
-            count_matrix,
+        model_multi = DiscreteModel(
             jump = 0.1,
             a = 1.0,
             b = 1.0,
@@ -43,9 +42,12 @@ using Test
             max_cycles = 10,
             n_random_trees = 2,
         )
+        tree_inference(model_multi, cluster_names, count_matrix)
 
+        model_cont = ContinuousModel()
         newtree2, model2, trees, LLs2 =
-            Phylotrajectories.continuous_tree_inference(cluster_names, count_matrix)
+            tree_inference(model_cont, cluster_names, count_matrix)
+
         @testset "Continuous" begin
             # Init GaussianPartition and IndependentGaussiansPartition
             n = 10

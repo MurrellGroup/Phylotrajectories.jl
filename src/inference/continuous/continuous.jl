@@ -1,6 +1,5 @@
 include("IndependentGaussiansPartition.jl")
 include("IndependentBrownianMotion.jl")
-include("sample.jl")
 
 function poisson_partition!(
     dest::IndependentGaussiansPartition,
@@ -14,29 +13,25 @@ function poisson_partition!(dest::IndependentGaussiansPartition)
     dest.norm_consts .= logpdf.(Poisson.(exp.(dest.means)), dest.counts)
 end
 
-function continuous_tree_inference(
+"""
+    tree_inference(model::ContinuousModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64})
+
+See [`ContinuousModel`](@ref) for model specification and parameters.
+"""
+function tree_inference(
+    model::ContinuousModel,
     cluster_names::Vector{String},
-    cluster_clono_matrix::Matrix{Int64};
-    mean_drift = 1.0,
-    Ne = 1.0,
-    sample_rate = 10.0,
-    start_branch_length = 0.1,
-    samples = 10,
-    consecutive_root_samples = 10,
+    cluster_clono_matrix::Matrix{Int64},
 )
     @assert size(cluster_names, 1) == size(cluster_clono_matrix, 1)
-    model = IndependentBrownianMotion(mean_drift, 1.0)
+    bm_model = IndependentBrownianMotion(model.mean_drift, 1.0)
     message_template = [IndependentGaussiansPartition(size(cluster_clono_matrix)[2])]
 
-
-    #Random starting tree
-    newt = sim_tree(size(cluster_clono_matrix)[1], Ne, sample_rate)
+    newt = sim_tree(size(cluster_clono_matrix)[1], model.Ne, model.sample_rate)
     internal_message_init!(newt, message_template)
 
-    #Set the leaf names from the imported count matrix, and init the partitions based on the counts there
     for (i, n) in enumerate(reverse(getleaflist(newt)))
         n.name = cluster_names[i]
-        #obs2partition!(n.message[1], log.(cluster_clono_matrix[i, :] .+ 1)) #Start with MLE (avoid log(0))
         n.message[1].vars .= 0.0
         poisson_partition!(n.message[1], cluster_clono_matrix[i, :])
     end
@@ -45,9 +40,8 @@ function continuous_tree_inference(
     for n in getnodelist(newt)
         n.nodeindex = i
         if !MolecularEvolution.isroot(n)
-            n.branchlength = start_branch_length
+            n.branchlength = model.start_branch_length
         end
-
         i += 1
     end
 
@@ -66,38 +60,35 @@ function continuous_tree_inference(
         title = "Starting Tree",
     )
 
-    #We let the prior over root frequencies be Normal(0, 1)
-
-    println("Starting LL: ", log_likelihood!(newt, model))
+    println("Starting LL: ", log_likelihood!(newt, bm_model))
 
     temp_messages = [copy_message(newt.message)]
-    #Run the MCMC with custom leaf sampling
-    trees, LLs, = metropolis_sample(
+    trees, LLs = metropolis_sample(
         newt,
-        [model],
-        samples,
+        [bm_model],
+        model.samples,
         burn_in = 2000,
         collect_LLs = true,
     ) do tree, models
-        sample_leafs!(temp_messages, tree, x -> models)
-        for i = 1:consecutive_root_samples
-            sample_root_distribution!(temp_messages[1], tree)
+        sample_leafs!(temp_messages, tree, x -> models, model.frequency_sampler)
+        for i = 1:model.consecutive_root_samples
+            sample_root_distribution!(temp_messages[1], tree, model.root_distribution_sampler)
         end
         nni_optim!(tree, x -> models, selection_rule = softmax_sampler)
         branchlength_optim!(tree, x -> models)
     end
 
-
-    return newt, model, trees, LLs
+    return newt, bm_model, trees, LLs
 end
 
-#Have temp_messages as input so we can reuse between chain iterations
+#The message-preserving algorithm is copy-pasted from branchlength/nni_optim! with some minor tweaks that does the leaf sampling.
+#TODO: (perhaps) make an interface for message-preserving traversal where you'd just pass in a function that does the leaf sampling.
 function sample_leafs!(
     temp_messages::Vector{Vector{T}},
     tree::FelNode,
-    models;
+    models,
+    sampler::FrequencySampler,
     partition_list = 1:length(tree.message),
-    sampler::FrequencySampler = FrequencySampler(Normal()),
     traversal = Iterators.reverse,
 ) where {T<:Partition}
     stack = [(pop!(temp_messages), tree, 1, 1, true, true)]
@@ -223,11 +214,8 @@ end
 #Assumes that we've done an up pass
 function sample_root_distribution!(
     temp_message::Vector{<:Partition},
-    tree::FelNode;
-    sampler::GaussianSampler = GaussianSampler(
-        MvNormal(zeros(2), Diagonal(ones(2))),
-        MvNormal(zeros(2), Diagonal(ones(2))),
-    ),
+    tree::FelNode,
+    sampler::GaussianSampler,
 )
     LL(x) = root_LL(x, temp_message, tree)
     gaussian_params = metropolis_step(LL, sampler, collect(tree.parent_message[1][1][1:2]))
