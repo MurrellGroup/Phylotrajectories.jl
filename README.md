@@ -37,6 +37,8 @@ clono_info, cluster_names, count_matrix = import_count_matrix("data/Clone_counts
 
 You can perform inference using either a discrete or continuous model:
 
+> [!NOTE]  
+> `DiscreteModel` supports both inferring the Maximum Likelihood tree and approximating a posterior tree space via MCMC, whereas `ContinuousModel` only supports the latter.
 ```julia
 # Using a discrete model
 model = DiscreteModel()

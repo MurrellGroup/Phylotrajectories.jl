@@ -26,7 +26,7 @@ end
     tree_inference(model::DiscreteModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64})
 
 Find the Maximum Likelihood tree for a count matrix `cluster_clono_matrix` using a discrete state model.
-Returns the ML tree, CTMC model, discretized states of frequencies, LL of the ML tree, and the final LLs of the initial trees.
+Returns the ML tree, CTMC model, discretized states of frequencies, optimized trees, and the final LLs of the initial trees.
 
 See [`DiscreteModel`](@ref) for model specification and parameters.
 """
@@ -46,12 +46,73 @@ function tree_inference(
     )
     message_template =
         [CustomDiscretePartition(length(states), size(cluster_clono_matrix)[2])]
+    
+    if model.ML
+        #--------------------------------
+        #ML
+        #--------------------------------
+        LLs = Vector{Float64}()
+        ML_newt = FelNode()
+        MLL = -Inf
+        trees = Vector{FelNode}()
+        for _ = 1:model.n_random_trees
+            newt = sim_tree(size(cluster_clono_matrix)[1], model.Ne, model.sample_rate)
+            push!(trees, newt)
+            internal_message_init!(newt, message_template)
 
-    LLs = Vector{Float64}()
-    ML_newt = FelNode()
-    MLL = -Inf
+            for (i, n) in enumerate(reverse(getleaflist(newt)))
+                n.name = cluster_names[i]
+                poisson_partition!(n.message[1], states, cluster_clono_matrix[i, :])
+            end
 
-    for _ = 1:model.n_random_trees
+            i = 1
+            for n in getnodelist(newt)
+                n.nodeindex = i
+                if !MolecularEvolution.isroot(n)
+                    n.branchlength = model.start_branch_length
+                end
+                i += 1
+            end
+
+            ladderize!(newt)
+            phylo_tree = get_phylo_tree(newt)
+            plot(
+                phylo_tree,
+                showtips = true,
+                tipfont = 6,
+                markersize = 4.0,
+                markerstrokewidth = 0,
+                margins = 1Plots.cm,
+                linewidth = 1.5,
+                markercolor = :black,
+                size = (500, 500),
+                title = "Starting Tree",
+            )
+
+            thresh_ind = findfirst(states .> 1)
+            newt.parent_message[1].state[1:thresh_ind, :] .= 1 / sum(thresh_ind)
+
+            println("Starting LL: ", log_likelihood!(newt, ctmc_model))
+
+            @time for i = 1:model.max_cycles
+                felsenstein_down!(newt, ctmc_model)
+                nni_optim!(newt, ctmc_model)
+            end
+
+            @time tree_polish!(newt, ctmc_model, verbose = 0, tol = 10^-6)
+            ladderize!(newt)
+            LL = log_likelihood!(newt, ctmc_model)
+            if LL > MLL
+                MLL = LL
+                ML_newt = newt
+            end
+            push!(LLs, LL)
+        end
+        return ML_newt, ctmc_model, states, trees, LLs
+    else
+        #--------------------------------
+        #MCMC
+        #--------------------------------
         newt = sim_tree(size(cluster_clono_matrix)[1], model.Ne, model.sample_rate)
         internal_message_init!(newt, message_template)
 
@@ -88,21 +149,14 @@ function tree_inference(
         newt.parent_message[1].state[1:thresh_ind, :] .= 1 / sum(thresh_ind)
 
         println("Starting LL: ", log_likelihood!(newt, ctmc_model))
-
-        @time for i = 1:model.max_cycles
-            felsenstein_down!(newt, ctmc_model)
-            nni_optim!(newt, ctmc_model)
-        end
-
-        @time tree_polish!(newt, ctmc_model, verbose = 0, tol = 10^-6)
-        ladderize!(newt)
-        LL = log_likelihood!(newt, ctmc_model)
-        if LL > MLL
-            MLL = LL
-            ML_newt = newt
-        end
-        push!(LLs, LL)
+        trees, LLs = metropolis_sample(
+            newt,
+            [ctmc_model],
+            model.n_samples,
+            burn_in = model.burn_in,
+            sample_interval = model.sample_interval,
+            collect_LLs = true,
+        )
+        return newt, ctmc_model, states, trees, LLs
     end
-
-    return ML_newt, ctmc_model, states, MLL, LLs
 end

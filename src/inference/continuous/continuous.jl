@@ -16,6 +16,8 @@ end
 """
     tree_inference(model::ContinuousModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64})
 
+Returns the initial tree, Brownian motion model, sampled trees, and the LLs of the sampled trees.
+
 See [`ContinuousModel`](@ref) for model specification and parameters.
 """
 function tree_inference(
@@ -66,8 +68,9 @@ function tree_inference(
     trees, LLs = metropolis_sample(
         newt,
         [bm_model],
-        model.samples,
-        burn_in = 2000,
+        model.n_samples,
+        burn_in = model.burn_in,
+        sample_interval = model.sample_interval,
         collect_LLs = true,
     ) do tree, models
         sample_leafs!(temp_messages, tree, x -> models, model.frequency_sampler)
@@ -78,7 +81,7 @@ function tree_inference(
         branchlength_optim!(tree, x -> models)
     end
 
-    return newt, bm_model, trees, LLs
+    return newt, bm_model, trees, LLs #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?
 end
 
 #The message-preserving algorithm is copy-pasted from branchlength/nni_optim! with some minor tweaks that does the leaf sampling.

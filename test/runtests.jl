@@ -28,9 +28,9 @@ using Test
             start_branch_length = 0.1,
             max_cycles = 10,
         )
-        newtree1, model1, states1, LL1, LLs1 =
+        newtree1, model1, states1, trees1, LLs1 =
             tree_inference(model, cluster_names, count_matrix)
-        @test LL1 ≈ -8785.964877067909
+        @test maximum(LLs1) ≈ -8785.964877067909
 
         model_multi = DiscreteModel(
             jump = 0.1,
@@ -44,7 +44,10 @@ using Test
         )
         tree_inference(model_multi, cluster_names, count_matrix)
 
-        model_cont = ContinuousModel()
+        model_mcmc = DiscreteModel(ML = false, n_samples = 10, burn_in = 10, sample_interval = 10)
+        tree_inference(model_mcmc, cluster_names, count_matrix)
+
+        model_cont = ContinuousModel(n_samples = 10, burn_in = 10, sample_interval = 10)
         newtree2, model2, trees, LLs2 =
             tree_inference(model_cont, cluster_names, count_matrix)
 
