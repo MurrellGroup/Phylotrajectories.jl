@@ -153,6 +153,7 @@ function tree_inference(
             newt,
             [ctmc_model],
             model.n_samples,
+            bl_sampler = model.branchlength_sampler,
             burn_in = model.burn_in,
             sample_interval = model.sample_interval,
             collect_LLs = true,

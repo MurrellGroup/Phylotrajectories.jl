@@ -77,8 +77,8 @@ function tree_inference(
         for i = 1:model.consecutive_root_samples
             sample_root_distribution!(temp_messages[1], tree, model.root_distribution_sampler)
         end
-        nni_optim!(tree, x -> models, selection_rule = softmax_sampler)
-        branchlength_optim!(tree, x -> models)
+        nni_update!(softmax_sampler, tree, x -> models)
+        branchlength_update!(model.branchlength_sampler, tree, x -> models)
     end
 
     return newt, bm_model, trees, LLs #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?

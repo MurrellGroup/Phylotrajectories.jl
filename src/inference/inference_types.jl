@@ -3,6 +3,7 @@ include("continuous/sample.jl") #we're importing this to make sure sampling type
 abstract type InferenceModel end
 
 const CANONICAL_JUMP = 0.1
+const DEFAULT_BRANCHLENGTH_SAMPLER = BranchlengthSampler(Normal(0, 2), Normal(-1, 1))
 
 
 """
@@ -23,6 +24,7 @@ Frequencies are discretized into states, and evolve by a continuous time Markov 
 - `n_samples::Int=10`: number of MCMC samples to collect.
 - `burn_in::Int=1000`: the number of MCMC iterations to discard as burn-in.
 - `sample_interval::Int=10`: the number of MCMC iterations between samples.
+- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
 """
 struct DiscreteModel <: InferenceModel
     ML::Bool
@@ -37,6 +39,7 @@ struct DiscreteModel <: InferenceModel
     n_samples::Int
     burn_in::Int
     sample_interval::Int
+    branchlength_sampler::BranchlengthSampler
 
     function DiscreteModel(;
         ML = true,
@@ -51,8 +54,9 @@ struct DiscreteModel <: InferenceModel
         n_samples = 10,
         burn_in = 1000,
         sample_interval = 10,
+        branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
     )
-        new(ML, jump, a, b, Ne, sample_rate, start_branch_length, max_cycles, n_random_trees, n_samples, burn_in, sample_interval)
+        new(ML, jump, a, b, Ne, sample_rate, start_branch_length, max_cycles, n_random_trees, n_samples, burn_in, sample_interval, branchlength_sampler)
     end
 end
 
@@ -70,11 +74,13 @@ Frequencies diffuse throughout the tree in a continuous space per Brownian motio
 - `burn_in::Int=1000`: the number of MCMC iterations to discard as burn-in.
 - `sample_interval::Int=10`: the number of MCMC iterations between samples.
 - `consecutive_root_samples::Int=10`: number of consecutive root distribution proposals per MCMC iteration.
+- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
 - `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
 - `root_distribution_sampler::GaussianSampler=GaussianSampler(MvNormal(zeros(2), Diagonal([1.0, 0.1])), MvNormal(zeros(2), Diagonal([0.1, 0.1])))`: the proposal and prior distributions for root updates in MCMC.
 """
 struct ContinuousModel <: InferenceModel
     mean_drift::Float64
+    branchlength_sampler::BranchlengthSampler
     frequency_sampler::FrequencySampler
     root_distribution_sampler::GaussianSampler
     Ne::Float64
@@ -87,6 +93,7 @@ struct ContinuousModel <: InferenceModel
 
     function ContinuousModel(;
         mean_drift = 0.0,
+        branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
         frequency_sampler = FrequencySampler(Normal()),
         root_distribution_sampler = GaussianSampler(
             MvNormal(zeros(2), Diagonal([1.0, 0.1])),
@@ -102,6 +109,7 @@ struct ContinuousModel <: InferenceModel
     )
         new(
             mean_drift,
+            branchlength_sampler,
             frequency_sampler,
             root_distribution_sampler,
             Ne,
