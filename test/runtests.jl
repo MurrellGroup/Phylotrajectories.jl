@@ -44,7 +44,8 @@ using Test
         )
         tree_inference(model_multi, cluster_names, count_matrix)
 
-        model_mcmc = DiscreteModel(ML = false, n_samples = 10, burn_in = 10, sample_interval = 10)
+        model_mcmc =
+            DiscreteModel(ML = false, n_samples = 10, burn_in = 10, sample_interval = 10)
         tree_inference(model_mcmc, cluster_names, count_matrix)
 
         model_cont = ContinuousModel(n_samples = 10, burn_in = 10, sample_interval = 10)

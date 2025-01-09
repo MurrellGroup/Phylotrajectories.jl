@@ -56,7 +56,21 @@ struct DiscreteModel <: InferenceModel
         sample_interval = 10,
         branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
     )
-        new(ML, jump, a, b, Ne, sample_rate, start_branch_length, max_cycles, n_random_trees, n_samples, burn_in, sample_interval, branchlength_sampler)
+        new(
+            ML,
+            jump,
+            a,
+            b,
+            Ne,
+            sample_rate,
+            start_branch_length,
+            max_cycles,
+            n_random_trees,
+            n_samples,
+            burn_in,
+            sample_interval,
+            branchlength_sampler,
+        )
     end
 end
 

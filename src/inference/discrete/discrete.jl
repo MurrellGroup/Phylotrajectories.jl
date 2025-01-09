@@ -46,7 +46,7 @@ function tree_inference(
     )
     message_template =
         [CustomDiscretePartition(length(states), size(cluster_clono_matrix)[2])]
-    
+
     if model.ML
         #--------------------------------
         #ML
