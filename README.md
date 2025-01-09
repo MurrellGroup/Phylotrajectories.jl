@@ -41,10 +41,12 @@ You can perform inference using either a discrete or continuous model:
 > `DiscreteModel` supports both inferring the Maximum Likelihood tree and approximating a posterior tree space via MCMC, whereas `ContinuousModel` only supports the latter.
 ```julia
 # Using a discrete model
-disc_tree, disc_model, disc_states, disc_trees, disc_LLs = tree_inference(DiscreteModel(), cluster_names, count_matrix)
+disc_tree, disc_model, disc_states, disc_trees, disc_LLs =
+    tree_inference(DiscreteModel(), cluster_names, count_matrix)
 
 # Using a continuous model
-cont_tree, cont_model, cont_trees, cont_LLs = tree_inference(ContinuousModel(), cluster_names, count_matrix)
+cont_tree, cont_model, cont_trees, cont_LLs =
+    tree_inference(ContinuousModel(), cluster_names, count_matrix)
 ```
 
 See docs for available model parameters.
