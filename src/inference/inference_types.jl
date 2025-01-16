@@ -110,8 +110,8 @@ struct ContinuousModel <: InferenceModel
         branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
         frequency_sampler = FrequencySampler(Normal()),
         root_distribution_sampler = GaussianSampler(
-            MvNormal(zeros(2), Diagonal([1.0, 0.1])),
             MvNormal(zeros(2), Diagonal([0.1, 0.1])),
+            MvNormal(zeros(2), Diagonal([1.0, 0.1])),
         ),
         Ne = 1.0,
         sample_rate = 10.0,

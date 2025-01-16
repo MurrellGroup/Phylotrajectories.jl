@@ -1,7 +1,7 @@
 """
     FrequencySampler(proposal::Distribution{Univariate,Continuous})
 
-A type that allows you to specify a additive proposal function. It also holds the acceptance ratio acc_ratio (acc_ratio[1] stores the number of accepts, and acc_ratio[2] stores the number of rejects).
+A type that allows you to specify an additive proposal function. It also holds the acceptance ratio acc_ratio (acc_ratio[1] stores the number of accepts, and acc_ratio[2] stores the number of rejects).
 """
 struct FrequencySampler
     acc_ratio::Array{Int64,1}
@@ -39,15 +39,15 @@ end
 """
     GaussianSampler(prior::Distribution{Multivariate,Continuous}, proposal::Distribution{Multivariate,Continuous})
 
-A type that allows you to specify multivariate prior and proposal functions over the Gaussian parameters [μ, ν] ~ N(μ, exp(ν)). It also holds the acceptance ratio `acc_ratio` (`acc_ratio[1]` stores the number of accepts, and `acc_ratio[2]` stores the number of rejects).
+A type that allows you to specify multivariate proposal and prior functions over the Gaussian parameters [μ, ν] ~ N(μ, exp(ν)). It also holds the acceptance ratio `acc_ratio` (`acc_ratio[1]` stores the number of accepts, and `acc_ratio[2]` stores the number of rejects).
 """
 struct GaussianSampler
     acc_ratio::Array{Int64,1}
-    prior::Distribution{Multivariate,Continuous}
     proposal::Distribution{Multivariate,Continuous}
-    function GaussianSampler(prior, proposal)
-        @assert length(prior) == length(proposal) == 2 "Prior and proposal must have exactly 2 dimensions"
-        new(zeros(Int64, 2), prior, proposal)
+    prior::Distribution{Multivariate,Continuous}
+    function GaussianSampler(proposal, prior)
+        @assert length(proposal) == length(prior) == 2 "Proposal and prior must have exactly 2 dimensions"
+        new(zeros(Int64, 2), proposal, prior)
     end
 end
 
