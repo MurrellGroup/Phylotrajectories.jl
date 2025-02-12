@@ -93,10 +93,8 @@ Frequencies diffuse throughout the tree in a continuous space per Brownian motio
 - `root_distribution_sampler::GaussianSampler=GaussianSampler(MvNormal(zeros(2), Diagonal([1.0, 0.1])), MvNormal(zeros(2), Diagonal([0.1, 0.1])))`: the proposal and prior distributions for root updates in MCMC.
 """
 struct ContinuousModel <: InferenceModel
+    update::ContinuousUpdate
     mean_drift::Float64
-    branchlength_sampler::BranchlengthSampler
-    frequency_sampler::FrequencySampler
-    root_distribution_sampler::GaussianSampler
     Ne::Float64
     sample_rate::Float64
     start_branch_length::Float64
@@ -106,13 +104,8 @@ struct ContinuousModel <: InferenceModel
     consecutive_root_samples::Int
 
     function ContinuousModel(;
+        update = ContinuousUpdate(),
         mean_drift = 0.0,
-        branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
-        frequency_sampler = FrequencySampler(Normal()),
-        root_distribution_sampler = GaussianSampler(
-            MvNormal(zeros(2), Diagonal([0.1, 0.1])),
-            MvNormal(zeros(2), Diagonal([1.0, 0.1])),
-        ),
         Ne = 1.0,
         sample_rate = 10.0,
         start_branch_length = 0.1,
@@ -122,10 +115,8 @@ struct ContinuousModel <: InferenceModel
         consecutive_root_samples = 10,
     )
         new(
+            update,
             mean_drift,
-            branchlength_sampler,
-            frequency_sampler,
-            root_distribution_sampler,
             Ne,
             sample_rate,
             start_branch_length,

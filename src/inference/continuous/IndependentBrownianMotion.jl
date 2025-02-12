@@ -1,19 +1,13 @@
 #Model behavior
-mutable struct IndependentBrownianMotion <: MolecularEvolution.ContinuousStateModel
-    mean_drifts::Array{Float64,1}
-    var_drifts::Array{Float64,1}
+mutable struct IndependentBrownianMotion{T} <: MolecularEvolution.ContinuousStateModel where {T<:Union{Float64, Array{Float64,1}}}
+    mean_drifts::T
+    var_drifts::T
     function IndependentBrownianMotion(
-        mean_drifts::Array{Float64,1},
-        var_drifts::Array{Float64,1},
-    )
+        mean_drifts::T,
+        var_drifts::T,
+    ) where {T<:Union{Float64, Array{Float64,1}}}
         @assert length(mean_drifts) == length(var_drifts)
-        new(mean_drifts, var_drifts)
-    end
-    # Use constant mean and var drift for all independent gaussians
-    # Works because for example [1, 2] .* [1] = [1, 2]
-    # Defined internally to avoid @assert
-    function IndependentBrownianMotion(mean_drift::Float64, var_drift::Float64)
-        new([mean_drift], [var_drift])
+        new{T}(mean_drifts, var_drifts)
     end
 end
 

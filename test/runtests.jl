@@ -56,7 +56,7 @@ using Test
             # Init GaussianPartition and IndependentGaussiansPartition
             n = 10
             means = collect(1:n) .- 5
-            vars = vcat(0:(n-2), Inf)
+            vars = vcat(1:(n-1), Inf)
             norm_consts = zeros(n)
             shuffle!(means)
             idg1 = IndependentGaussiansPartition(copy(means), copy(vars), copy(norm_consts))

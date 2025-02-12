@@ -1,4 +1,3 @@
-include("IndependentGaussiansPartition.jl")
 include("IndependentBrownianMotion.jl")
 
 function poisson_partition!(
@@ -64,22 +63,17 @@ function tree_inference(
 
     println("Starting LL: ", log_likelihood!(newt, bm_model))
 
-    temp_messages = [copy_message(newt.message)]
+    push!(model.update.temp_messages, copy_message(newt.message))
+
     trees, LLs = metropolis_sample(
+        model.update,
         newt,
         [bm_model],
         model.n_samples,
         burn_in = model.burn_in,
         sample_interval = model.sample_interval,
         collect_LLs = true,
-    ) do tree, models
-        sample_leafs!(temp_messages, tree, x -> models, model.frequency_sampler)
-        for i = 1:model.consecutive_root_samples
-            sample_root_distribution!(temp_messages[1], tree, model.root_distribution_sampler)
-        end
-        nni_update!(softmax_sampler, tree, x -> models)
-        branchlength_update!(model.branchlength_sampler, tree, x -> models)
-    end
+    )
 
     return newt, bm_model, trees, LLs #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?
 end
@@ -212,33 +206,4 @@ function leaf_log_posterior(
     combine!(temp_message[part], node.parent_message[part])
 
     return copy(MolecularEvolution.site_LLs(temp_message[part]))
-end
-
-#Assumes that we've done an up pass
-function sample_root_distribution!(
-    temp_message::Vector{<:Partition},
-    tree::FelNode,
-    sampler::GaussianSampler,
-)
-    LL(x) = root_LL(x, temp_message, tree)
-    gaussian_params = metropolis_step(LL, sampler, collect(tree.parent_message[1][1][1:2]))
-    set_idg!(tree.parent_message[1], gaussian_params...)
-end
-
-function root_LL(
-    gaussian_params::Array{Float64,1},
-    temp_message::Vector{<:Partition},
-    tree::FelNode,
-)
-    part = 1
-    set_idg!(temp_message[part], gaussian_params...)
-    combine!(temp_message[part], tree.message[part])
-
-    return sum(MolecularEvolution.total_LL.(temp_message))
-end
-
-function set_idg!(dest::IndependentGaussiansPartition, mean::Float64, var::Float64)
-    dest.means .= mean
-    dest.vars .= var
-    dest.norm_consts .= 0.0
 end

@@ -10,6 +10,6 @@ include("recombination.jl")
 
 export tree_inference, import_count_matrix, sim_count_matrix, recombine
 export IndependentBrownianMotion, IndependentGaussiansPartition
-export FrequencySampler, GaussianSampler
+export FrequencySampler, GaussianStateSample, ContinuousUpdate
 export DiscreteModel, ContinuousModel
 end

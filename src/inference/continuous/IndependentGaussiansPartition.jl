@@ -79,12 +79,12 @@ function MolecularEvolution.merge_two_gaussians(
     for i = 1:length(g1)
         #Handling some edge cases. These aren't mathematically sensible. A gaussian with "Inf" variance will behave like a 1,1,1,1 vector in discrete felsenstein.
         #To-do: update some of these so that the norm constant is properly handled, even if the variance is Inf (so it isn't exactly well-defined anyway)
-        if g1.vars[i] == 0 && g2.vars[i] == 0 && g1.vars[i] != g2.vars[i]
+        if g1.vars[i] == 0 && g2.vars[i] == 0 && g1.means[i] != g2.means[i]
             error("both gaussians have 0 variance but different means")
         elseif g1.vars[i] == 0
-            res_gaussians[i] = g1[i]
+            res_gaussians[i] = MolecularEvolution._merge_point_mass(g1, g2, i)
         elseif g2.vars[i] == 0
-            res_gaussians[i] = g2[i]
+            res_gaussians[i] = MolecularEvolution._merge_point_mass(g2, g1, i)
         end
         if g1.vars[i] == Inf && g2.vars[i] == Inf
             res_gaussians[i] = ((g1.means[i] + g2.means[i]) / 2, Inf, 0.0)
@@ -95,6 +95,12 @@ function MolecularEvolution.merge_two_gaussians(
         end
     end
     return res_gaussians
+end
+
+function MolecularEvolution._merge_point_mass(point::IndependentGaussiansPartition, regular::IndependentGaussiansPartition, i::Int)
+    mean, var, norm_const = point[i]
+    norm_const += logpdf(Normal(mean, sqrt(var)), regular.means[i]) + regular.norm_consts[i]
+    return mean, var, norm_const
 end
 
 function MolecularEvolution.identity!(dest::IndependentGaussiansPartition)
