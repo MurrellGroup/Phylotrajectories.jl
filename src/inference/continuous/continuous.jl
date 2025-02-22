@@ -1,5 +1,3 @@
-include("IndependentBrownianMotion.jl")
-
 function poisson_partition!(
     dest::IndependentGaussiansPartition,
     observed_counts::Array{Int64,1},
@@ -15,7 +13,7 @@ end
 """
     tree_inference(model::ContinuousModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64})
 
-Returns the initial tree, Brownian motion model, sampled trees, and the LLs of the sampled trees.
+Returns the initial tree, sampled trees, LLs of the sampled trees, and the mean drift of the sampled models.
 
 See [`ContinuousModel`](@ref) for model specification and parameters.
 """
@@ -65,17 +63,18 @@ function tree_inference(
 
     push!(model.update.temp_messages, copy_message(newt.message))
 
-    trees, LLs = metropolis_sample(
+    trees, LLs, models = metropolis_sample(
         model.update,
         newt,
-        [bm_model],
+        bm_model,
         model.n_samples,
         burn_in = model.burn_in,
         sample_interval = model.sample_interval,
         collect_LLs = true,
+        collect_models = true,
     )
 
-    return newt, bm_model, trees, LLs #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?
+    return newt, trees, LLs, models #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?
 end
 
 #The message-preserving algorithm is copy-pasted from branchlength/nni_optim! with some minor tweaks that does the leaf sampling.

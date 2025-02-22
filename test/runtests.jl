@@ -49,7 +49,7 @@ using Test
         tree_inference(model_mcmc, cluster_names, count_matrix)
 
         model_cont = ContinuousModel(n_samples = 10, burn_in = 10, sample_interval = 10)
-        newtree2, model2, trees, LLs2 =
+        newtree2, trees, LLs2, models =
             tree_inference(model_cont, cluster_names, count_matrix)
 
         @testset "Continuous" begin

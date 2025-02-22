@@ -77,20 +77,17 @@ end
 """
     ContinuousModel(; <keyword arguments>)
 
-Frequencies diffuse throughout the tree in a continuous space per Brownian motion. The posterior distribution over trees is explored with the Metropolis algorithm, where the root distribution and the the frequencies at the leaves are sampled.
+Frequencies diffuse throughout the tree in a continuous space per Brownian motion. The posterior distribution over trees is explored with the Metropolis algorithm, see [`ContinuousUpdate`](@ref) for more details on this.
 
 # Keyword Arguments
-- `mean_drift::Float64=0.0`: mean drift parameter for the Brownian motion process in the unbounded frequency space.
+- `update::ContinuousUpdate=ContinuousUpdate()`: the characterization of an MCMC iteration.
+- `mean_drift::Float64=0.0`: mean drift parameter for the Brownian motion process in the unbounded frequency space. If `update` samples the mean drift, then this is the intitial value.
 - `Ne::Float64=1.0`: the initial tree's effective population size.
 - `sample_rate::Float64=10.0`: the initial tree's sample rate.
 - `start_branch_length::Float64=0.1`: the initial tree's non-root branch lengths.
 - `n_samples::Int=10`: number of MCMC samples to collect after burn-in.
 - `burn_in::Int=1000`: the number of MCMC iterations to discard as burn-in.
 - `sample_interval::Int=10`: the number of MCMC iterations between samples.
-- `consecutive_root_samples::Int=10`: number of consecutive root distribution proposals per MCMC iteration.
-- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
-- `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
-- `root_distribution_sampler::GaussianSampler=GaussianSampler(MvNormal(zeros(2), Diagonal([1.0, 0.1])), MvNormal(zeros(2), Diagonal([0.1, 0.1])))`: the proposal and prior distributions for root updates in MCMC.
 """
 struct ContinuousModel <: InferenceModel
     update::ContinuousUpdate
