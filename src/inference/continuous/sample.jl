@@ -167,7 +167,7 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
         branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
         frequency_sampler = FrequencySampler(Normal()),
         root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1),
-        mean_drift_sampler = MeanDriftSampler(Normal(0.0, 0.2), Normal(-0.3, 0.5), 1.0),
+        mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),
         models = 1
     )
         new(BayesUpdate(root = 1, models = models, branchlength_sampler = branchlength_sampler, root_sampler = root_sampler, models_sampler = mean_drift_sampler), frequency_sampler, Vector{Vector{Partition}}())

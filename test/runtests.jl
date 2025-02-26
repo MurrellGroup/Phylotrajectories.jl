@@ -1,4 +1,4 @@
-using Phylotrajectories, MolecularEvolution, Random
+using Phylotrajectories, MolecularEvolution, Random, Distributions
 using Test
 
 @testset "Phylotrajectories.jl" begin
@@ -79,8 +79,8 @@ using Test
             end
 
             x = Vector{Float64}(1:n)
-            @test MolecularEvolution.gaussian_pdf(idg1, x) ==
-                  MolecularEvolution.gaussian_pdf.(gs1, x)
+            @test Distributions.logpdf(idg1, x) ==
+                  Distributions.logpdf.(gs1, x)
             MolecularEvolution.identity!(idg1)
             MolecularEvolution.site_LLs(idg1)
             sample_partition!(idg1)

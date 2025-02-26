@@ -122,14 +122,14 @@ function MolecularEvolution.site_LLs(part::IndependentGaussiansPartition)
     return part.norm_consts
 end
 
-function MolecularEvolution.gaussian_pdf(
+function Distributions.logpdf(
     g::IndependentGaussiansPartition,
     x::Array{Float64,1},
 )
-    result = pdf.(Normal.(g.means, sqrt.(g.vars)), x)
+    result = logpdf.(Normal.(g.means, sqrt.(g.vars)), x)
     for i = 1:length(g)
         if g.vars[i] == 0
-            result[i] = Float64(x == g.means[i]) #Hokey...
+            error("logpdf not defined for point mass")
         end
     end
     return result
