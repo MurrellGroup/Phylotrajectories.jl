@@ -13,6 +13,15 @@ using Test
         _, cluster_names2, count_matrix2 = import_count_matrix("data/Clone_counts_HDM.csv")
         @test cluster_names1 == cluster_names2
         @test count_matrix1 == count_matrix2
+
+        _, cluster_names3, count_matrix3 = import_count_matrix(
+            "data/HDM_clone_data_l1_v2_1210_notcr_tmp.tsv",
+            :Clonotype_tmp, #Consists of ints, want to be able to read this kind of data
+            :cell_types,
+            :TRB_cdr3aa,
+        )
+        @test count_matrix3[1:5, 1:5] ==
+              [1 1 0 0 0; 0 9 0 2 0; 0 2 1 2 6; 0 3 0 1 1; 0 0 0 0 2]
     end
 
     @testset "inference" begin
