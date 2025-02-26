@@ -45,7 +45,7 @@ disc_tree, disc_model, disc_states, disc_trees, disc_LLs =
     tree_inference(DiscreteModel(), cluster_names, count_matrix)
 
 # Using a continuous model
-cont_tree, cont_model, cont_trees, cont_LLs =
+cont_tree, cont_trees, cont_LLs, collapsed_cont_models =
     tree_inference(ContinuousModel(), cluster_names, count_matrix)
 ```
 
