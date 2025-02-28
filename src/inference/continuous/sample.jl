@@ -6,10 +6,10 @@ include("IndependentBrownianMotion.jl")
 
 A type that allows you to specify an additive proposal function. It also holds the acceptance ratio acc_ratio (acc_ratio[1] stores the number of accepts, and acc_ratio[2] stores the number of rejects).
 """
-struct FrequencySampler
-    acc_ratio::Array{Int64,1}
+mutable struct FrequencySampler
+    acc_ratio::Tuple{Float64, Int64, Int64}
     proposal::Distribution{Univariate,Continuous}
-    FrequencySampler(proposal) = new(zeros(Int64, 2), proposal)
+    FrequencySampler(proposal) = new((0.0, 0, 0), proposal)
 end
 
 MolecularEvolution.proposal(modifier::FrequencySampler, curr_value::Array{Float64,1}) =
@@ -40,30 +40,60 @@ function MolecularEvolution.metropolis_step(
 end
 
 """
+mutable struct RootAcceptanceRatio
+
+Holds tuples of `(ratio, total, #acceptances)` in the fields `position` and `state`, where `ratio::Float64` is the acceptance ratio, `total::Int64` is the total number of proposals, and `#acceptances::Int64` is the number of acceptances.
+"""
+mutable struct RootAcceptanceRatio
+    position::Tuple{Float64, Int64, Int64} #(ratio, total, #acceptances)
+    state::Tuple{Float64, Int64, Int64}
+    RootAcceptanceRatio() = new((0.0, 0, 0), (0.0, 0, 0))
+end
+
+#=
+function Base.show(io::IO, r::RootAcceptanceRatio)
+    println(io, """\n
+Position
+    Ratio:   $(r.position[1])
+    Total:   $(r.position[2])
+    Accepts: $(r.position[3])
+State
+    Ratio:   $(r.state[1])
+    Total:   $(r.state[2])
+    Accepts: $(r.state[3])""")
+end
+=#
+Base.show(io::IO, r::RootAcceptanceRatio) = print(io, "position=$(r.position), state=$(r.state)")
+
+"""
 # Summary
 `struct GaussianStateSample <: MolecularEvolution.UniformRootPositionSample`
 
-Implements the metropolis algorithm for the global Gaussian parameters [μ, ν], where the root state of each clonotype is ~ N(μ, exp(ν)), and updates the root position by `MolecularEvolution.UniformRootPositionSample`. It also holds the acceptance ratio `acc_ratio` (`acc_ratio[1]` stores the number of accepts, and `acc_ratio[2]` stores the number of rejects).
+Implements the metropolis algorithm for the global Gaussian parameters [μ, ν], where the root state of each clonotype is ~ N(μ, exp(ν)), and updates the root position by `MolecularEvolution.UniformRootPositionSample` if `position = true`. It also holds the acceptance ratio `acc_ratio` in an `RootAcceptanceRatio` struct.
 # Constructor
-    GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, consecutive::Int64)
+    GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, consecutive::Int64; position::Bool = true)
 
 Allows you to specify multivariate proposal and prior distributions for [μ, ν]. `consecutive` is the number of consecutive updates of the root (state *and* position) per MCMC iteration.
 """
-mutable struct GaussianStateSample{T1, T2} <: MolecularEvolution.UniformRootPositionSample where {T1,T2 <: ContinuousMultivariateDistribution}
-    acc_ratio::Array{Int64,1}
+mutable struct GaussianStateSample{T0, T1<:ContinuousMultivariateDistribution, T2<:ContinuousMultivariateDistribution} <: MolecularEvolution.UniformRootPositionSample
+    acc_ratio::RootAcceptanceRatio
     proposal::T1
     prior::T2
     temp_partition::IndependentGaussiansPartition
     consecutive::Int64
+    parity::Bool #don't mind me, used to track acceptance ratio for position/state
     function GaussianStateSample(
         proposal::T1,
         prior::T2,
-        consecutive::Int64,
+        consecutive::Int64;
+        position::Bool = true,
     ) where {T1<:ContinuousMultivariateDistribution,T2<:ContinuousMultivariateDistribution}
         @assert length(proposal) == length(prior) == 2 "Proposal and prior must have exactly 2 dimensions"
-        new{T1,T2}(zeros(Int64, 2), proposal, prior, IndependentGaussiansPartition(0), consecutive)
+        new{position,T1,T2}(RootAcceptanceRatio(), proposal, prior, IndependentGaussiansPartition(0), consecutive, false)
     end
 end
+
+const parity_map = Dict(false => :position, true => :state)
 
 Base.length(root_sample::GaussianStateSample) = root_sample.consecutive
 
@@ -100,11 +130,24 @@ MolecularEvolution.proposal(modifier::GaussianStateSample, curr_value::Vector{Fl
 MolecularEvolution.log_prior(modifier::GaussianStateSample, curr_value::Vector{Float64}) = 
     logpdf(modifier.prior, curr_value)
 
-struct MeanDriftSampler{
+MolecularEvolution.proposal(modifier::GaussianStateSample{false}, curr_value::@NamedTuple{root::FelNode, dist_above_node::Float64}) = curr_value
+
+function MolecularEvolution.apply_decision(modifier::GaussianStateSample, accept::Bool)
+    ratio, total, acc = getproperty(modifier.acc_ratio, parity_map[modifier.parity])
+    total += 1
+    if accept
+        acc += 1
+    end
+    ratio = acc / total
+    setproperty!(modifier.acc_ratio, parity_map[modifier.parity], (ratio, total, acc))
+    modifier.parity = !modifier.parity
+end
+
+mutable struct MeanDriftSampler{
     T1<:ContinuousUnivariateDistribution,
     T2<:ContinuousUnivariateDistribution,
 } <: ModelsUpdate
-    acc_ratio::Vector{Int}
+    acc_ratio::Tuple{Float64, Int64, Int64}
     mean_drift_proposal::T1
     mean_drift_prior::T2
     var_drift::Float64
@@ -113,7 +156,7 @@ struct MeanDriftSampler{
         mean_drift_prior::T2,
         var_drift::Float64,
     ) where {T1<:ContinuousUnivariateDistribution, T2<:ContinuousUnivariateDistribution}
-        new{T1, T2}([0, 0], mean_drift_proposal, mean_drift_prior, var_drift)
+        new{T1, T2}((0.0, 0, 0), mean_drift_proposal, mean_drift_prior, var_drift)
     end
 end
 
@@ -146,9 +189,10 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
     ContinuousUpdate(; <keyword arguments>)
 
 # Keyword Arguments
+- `position::Bool=true`: whether to update the root position.
 - `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
 - `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
-- `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1)`: the proposal and prior distributions for root updates in MCMC.
+- `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
 - `mean_drift_sampler::MeanDriftSampler=MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0)`: the proposal and prior distributions for mean drift updates in MCMC, and the variance drift of the Brownian motion.
 - `models::Int=1`: the number of consecutive models updates per MCMC iteration.
 
@@ -156,7 +200,7 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
     To disable the sampling of the mean drift, one can set `models=0`.
 
 !!! note
-    `GaussianStateSample` also updates the root position. See [`GaussianStateSample`](@ref) for more details.
+    `GaussianStateSample` also updates the root position by default. See [`GaussianStateSample`](@ref) for more details.
 """
 struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
     bayes_update::MolecularEvolution.StandardUpdate
@@ -164,11 +208,12 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
     temp_messages::Vector{Vector{Partition}}
 
     function ContinuousUpdate(;
+        position = true,
         branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
         frequency_sampler = FrequencySampler(Normal()),
-        root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1),
+        root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1, position = position),
         mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),
-        models = 1
+        models = 1,
     )
         new(BayesUpdate(root = 1, models = models, branchlength_sampler = branchlength_sampler, root_sampler = root_sampler, models_sampler = mean_drift_sampler), frequency_sampler, Vector{Vector{Partition}}())
     end
