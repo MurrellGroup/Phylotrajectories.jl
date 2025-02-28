@@ -40,30 +40,56 @@ function MolecularEvolution.metropolis_step(
 end
 
 """
+mutable struct RootAcceptanceRatio
+
+Holds tuples of `(ratio, total, #acceptances)` in the fields `position` and `state`, where `ratio::Float64` is the acceptance ratio, `total::Int64` is the total number of proposals, and `#acceptances::Int64` is the number of acceptances.
+"""
+mutable struct RootAcceptanceRatio
+    position::Tuple{Float64, Int64, Int64} #(ratio, total, #acceptances)
+    state::Tuple{Float64, Int64, Int64}
+    RootAcceptanceRatio() = new((0.0, 0, 0), (0.0, 0, 0))
+end
+
+function Base.show(io::IO, r::RootAcceptanceRatio)
+    println(io, """\n
+Position
+    Ratio:   $(r.position[1])
+    Total:   $(r.position[2])
+    Accepts: $(r.position[3])
+State
+    Ratio:   $(r.state[1])
+    Total:   $(r.state[2])
+    Accepts: $(r.state[3])""")
+end
+
+"""
 # Summary
 `struct GaussianStateSample <: MolecularEvolution.UniformRootPositionSample`
 
-Implements the metropolis algorithm for the global Gaussian parameters [μ, ν], where the root state of each clonotype is ~ N(μ, exp(ν)), and updates the root position by `MolecularEvolution.UniformRootPositionSample`. It also holds the acceptance ratio `acc_ratio` (`acc_ratio[1]` stores the number of accepts, and `acc_ratio[2]` stores the number of rejects).
+Implements the metropolis algorithm for the global Gaussian parameters [μ, ν], where the root state of each clonotype is ~ N(μ, exp(ν)), and updates the root position by `MolecularEvolution.UniformRootPositionSample`. It also holds the acceptance ratio `acc_ratio` in an `RootAcceptanceRatio` struct.
 # Constructor
     GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, consecutive::Int64)
 
 Allows you to specify multivariate proposal and prior distributions for [μ, ν]. `consecutive` is the number of consecutive updates of the root (state *and* position) per MCMC iteration.
 """
 mutable struct GaussianStateSample{T1, T2} <: MolecularEvolution.UniformRootPositionSample where {T1,T2 <: ContinuousMultivariateDistribution}
-    acc_ratio::Array{Int64,1}
+    acc_ratio::RootAcceptanceRatio
     proposal::T1
     prior::T2
     temp_partition::IndependentGaussiansPartition
     consecutive::Int64
+    parity::Bool #don't mind me, used to track acceptance ratio for position/state
     function GaussianStateSample(
         proposal::T1,
         prior::T2,
         consecutive::Int64,
     ) where {T1<:ContinuousMultivariateDistribution,T2<:ContinuousMultivariateDistribution}
         @assert length(proposal) == length(prior) == 2 "Proposal and prior must have exactly 2 dimensions"
-        new{T1,T2}(zeros(Int64, 2), proposal, prior, IndependentGaussiansPartition(0), consecutive)
+        new{T1,T2}(RootAcceptanceRatio(), proposal, prior, IndependentGaussiansPartition(0), consecutive, false)
     end
 end
+
+const parity_map = Dict(false => :position, true => :state)
 
 Base.length(root_sample::GaussianStateSample) = root_sample.consecutive
 
@@ -99,6 +125,17 @@ MolecularEvolution.proposal(modifier::GaussianStateSample, curr_value::Vector{Fl
 
 MolecularEvolution.log_prior(modifier::GaussianStateSample, curr_value::Vector{Float64}) = 
     logpdf(modifier.prior, curr_value)
+
+function MolecularEvolution.apply_decision(modifier::GaussianStateSample, accept::Bool)
+    ratio, total, acc = getproperty(modifier.acc_ratio, parity_map[modifier.parity])
+    total += 1
+    if accept
+        acc += 1
+    end
+    ratio = acc / total
+    setproperty!(modifier.acc_ratio, parity_map[modifier.parity], (ratio, total, acc))
+    modifier.parity = !modifier.parity
+end
 
 struct MeanDriftSampler{
     T1<:ContinuousUnivariateDistribution,
