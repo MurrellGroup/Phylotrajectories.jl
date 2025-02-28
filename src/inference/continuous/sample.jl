@@ -6,10 +6,10 @@ include("IndependentBrownianMotion.jl")
 
 A type that allows you to specify an additive proposal function. It also holds the acceptance ratio acc_ratio (acc_ratio[1] stores the number of accepts, and acc_ratio[2] stores the number of rejects).
 """
-struct FrequencySampler
-    acc_ratio::Array{Int64,1}
+mutable struct FrequencySampler
+    acc_ratio::Tuple{Float64, Int64, Int64}
     proposal::Distribution{Univariate,Continuous}
-    FrequencySampler(proposal) = new(zeros(Int64, 2), proposal)
+    FrequencySampler(proposal) = new((0.0, 0, 0), proposal)
 end
 
 MolecularEvolution.proposal(modifier::FrequencySampler, curr_value::Array{Float64,1}) =
@@ -50,6 +50,7 @@ mutable struct RootAcceptanceRatio
     RootAcceptanceRatio() = new((0.0, 0, 0), (0.0, 0, 0))
 end
 
+#=
 function Base.show(io::IO, r::RootAcceptanceRatio)
     println(io, """\n
 Position
@@ -61,6 +62,8 @@ State
     Total:   $(r.state[2])
     Accepts: $(r.state[3])""")
 end
+=#
+Base.show(io::IO, r::RootAcceptanceRatio) = print(io, "position=$(r.position), state=$(r.state)")
 
 """
 # Summary
@@ -137,11 +140,11 @@ function MolecularEvolution.apply_decision(modifier::GaussianStateSample, accept
     modifier.parity = !modifier.parity
 end
 
-struct MeanDriftSampler{
+mutable struct MeanDriftSampler{
     T1<:ContinuousUnivariateDistribution,
     T2<:ContinuousUnivariateDistribution,
 } <: ModelsUpdate
-    acc_ratio::Vector{Int}
+    acc_ratio::Tuple{Float64, Int64, Int64}
     mean_drift_proposal::T1
     mean_drift_prior::T2
     var_drift::Float64
@@ -150,7 +153,7 @@ struct MeanDriftSampler{
         mean_drift_prior::T2,
         var_drift::Float64,
     ) where {T1<:ContinuousUnivariateDistribution, T2<:ContinuousUnivariateDistribution}
-        new{T1, T2}([0, 0], mean_drift_proposal, mean_drift_prior, var_drift)
+        new{T1, T2}((0.0, 0, 0), mean_drift_proposal, mean_drift_prior, var_drift)
     end
 end
 
