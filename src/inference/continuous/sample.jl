@@ -71,31 +71,35 @@ Base.show(io::IO, r::RootAcceptanceRatio) = print(io, "position=$(r.position), s
 
 Implements the metropolis algorithm for the global Gaussian parameters [μ, ν], where the root state of each clonotype is ~ N(μ, exp(ν)), and updates the root position by `MolecularEvolution.UniformRootPositionSample` if `position = true`. It also holds the acceptance ratio `acc_ratio` in an `RootAcceptanceRatio` struct.
 # Constructor
-    GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, consecutive::Int64; position::Bool = true)
+    GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, radius::Float64,consecutive::Int64; position::Bool = true)
 
-Allows you to specify multivariate proposal and prior distributions for [μ, ν]. `consecutive` is the number of consecutive updates of the root (state *and* position) per MCMC iteration.
+Allows you to specify multivariate proposal and prior distributions for [μ, ν]. `consecutive` is the number of consecutive updates of the root (state *and* position) per MCMC iteration. radius (∈ [0,1]) scales tree's total branch length to determine local proposal radius for root position. 
 """
 mutable struct GaussianStateSample{T0, T1<:ContinuousMultivariateDistribution, T2<:ContinuousMultivariateDistribution} <: MolecularEvolution.UniformRootPositionSample
     acc_ratio::RootAcceptanceRatio
     proposal::T1
     prior::T2
     temp_partition::IndependentGaussiansPartition
+    radius::Float64
     consecutive::Int64
     parity::Bool #don't mind me, used to track acceptance ratio for position/state
     function GaussianStateSample(
         proposal::T1,
         prior::T2,
+        radius::Float64,
         consecutive::Int64;
         position::Bool = true,
     ) where {T1<:ContinuousMultivariateDistribution,T2<:ContinuousMultivariateDistribution}
         @assert length(proposal) == length(prior) == 2 "Proposal and prior must have exactly 2 dimensions"
-        new{position,T1,T2}(RootAcceptanceRatio(), proposal, prior, IndependentGaussiansPartition(0), consecutive, false)
+        @assert 0 <= radius <= 1 "Radius must be in [0, 1]"
+        new{position,T1,T2}(RootAcceptanceRatio(), proposal, prior, IndependentGaussiansPartition(0), radius,consecutive, false)
     end
 end
 
 const parity_map = Dict(false => :position, true => :state)
 
 Base.length(root_sample::GaussianStateSample) = root_sample.consecutive
+MolecularEvolution.radius(root_sample::GaussianStateSample, total_bl::Real) = root_sample.radius * total_bl
 
 function set_idg!(dest::IndependentGaussiansPartition, mean::Float64, var::Float64)
     dest.means .= mean
@@ -192,7 +196,7 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
 - `position::Bool=true`: whether to update the root position.
 - `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
 - `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
-- `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
+- `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
 - `mean_drift_sampler::MeanDriftSampler=MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0)`: the proposal and prior distributions for mean drift updates in MCMC, and the variance drift of the Brownian motion.
 - `models::Int=1`: the number of consecutive models updates per MCMC iteration.
 
@@ -211,7 +215,7 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
         position = true,
         branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
         frequency_sampler = FrequencySampler(Normal()),
-        root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1, position = position),
+        root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position),
         mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),
         models = 1,
     )
