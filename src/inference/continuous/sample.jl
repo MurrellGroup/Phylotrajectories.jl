@@ -194,7 +194,7 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
 
 # Keyword Arguments
 - `position::Bool=true`: whether to update the root position.
-- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
+- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=Phylotrajectories.default_branchlength_sampler()`: the proposal and prior distributions for branch length updates in MCMC.
 - `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
 - `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
 - `mean_drift_sampler::MeanDriftSampler=MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0)`: the proposal and prior distributions for mean drift updates in MCMC, and the variance drift of the Brownian motion.
@@ -213,7 +213,7 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
 
     function ContinuousUpdate(;
         position = true,
-        branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
+        branchlength_sampler = default_branchlength_sampler(),
         frequency_sampler = FrequencySampler(Normal()),
         root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position),
         mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),

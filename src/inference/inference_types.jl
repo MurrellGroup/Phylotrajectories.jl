@@ -3,7 +3,7 @@ include("continuous/sample.jl") #we're importing this to make sure sampling type
 abstract type InferenceModel end
 
 const CANONICAL_JUMP = 0.1
-const DEFAULT_BRANCHLENGTH_SAMPLER = BranchlengthSampler(Normal(0, 2), Normal(-1, 1))
+default_branchlength_sampler() = BranchlengthSampler(Normal(0, 2), Normal(-1, 1))
 
 
 """
@@ -24,7 +24,7 @@ Frequencies are discretized into states, and evolve by a continuous time Markov 
 - `n_samples::Int=10`: number of MCMC samples to collect.
 - `burn_in::Int=1000`: the number of MCMC iterations to discard as burn-in.
 - `sample_interval::Int=10`: the number of MCMC iterations between samples.
-- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=DEFAULT_BRANCHLENGTH_SAMPLER`: the proposal and prior distributions for branch length updates in MCMC.
+- `branchlength_sampler::MolecularEvolution.BranchlengthSampler=Phylotrajectories.default_branchlength_sampler()`: the proposal and prior distributions for branch length updates in MCMC.
 """
 struct DiscreteModel <: InferenceModel
     ML::Bool
@@ -54,7 +54,7 @@ struct DiscreteModel <: InferenceModel
         n_samples = 10,
         burn_in = 1000,
         sample_interval = 10,
-        branchlength_sampler = DEFAULT_BRANCHLENGTH_SAMPLER,
+        branchlength_sampler = default_branchlength_sampler(),
     )
         new(
             ML,
