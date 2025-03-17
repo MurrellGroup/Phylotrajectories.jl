@@ -178,9 +178,11 @@ function (update::MeanDriftSampler)(
     models::IndependentBrownianMotion{Float64};
     partition_list = 1:length(tree.message),
 )
-    metropolis_step(update, models) do x::IndependentBrownianMotion{Float64}
+    models = metropolis_step(update, models) do x::IndependentBrownianMotion{Float64}
         log_likelihood!(tree, x)
     end
+    log_likelihood!(tree, models) #refresh partitions throughout the tree
+    return models
 end
 
 
@@ -199,6 +201,7 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
 - `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
 - `mean_drift_sampler::MeanDriftSampler=MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0)`: the proposal and prior distributions for mean drift updates in MCMC, and the variance drift of the Brownian motion.
 - `models::Int=1`: the number of consecutive models updates per MCMC iteration.
+- `refresh::Bool=true`: whether to refresh the messages in tree between update operations to ensure message consistency (for debugging purposes).
 
 !!! note
     To disable the sampling of the mean drift, one can set `models=0`.
@@ -210,6 +213,7 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
     bayes_update::MolecularEvolution.StandardUpdate
     frequency_sampler::FrequencySampler
     temp_messages::Vector{Vector{Partition}}
+    refresh::Bool
 
     function ContinuousUpdate(;
         position = true,
@@ -218,12 +222,14 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
         root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position),
         mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),
         models = 1,
+        refresh = false,
     )
-        new(BayesUpdate(root = 1, models = models, branchlength_sampler = branchlength_sampler, root_sampler = root_sampler, models_sampler = mean_drift_sampler), frequency_sampler, Vector{Vector{Partition}}())
+        new(BayesUpdate(root = 1, models = models, refresh = refresh, branchlength_sampler = branchlength_sampler, root_sampler = root_sampler, models_sampler = mean_drift_sampler), frequency_sampler, Vector{Vector{Partition}}(), refresh)
     end
 end
 
 function (update::ContinuousUpdate)(tree::FelNode, models; partition_list = 1:length(tree.message))
+    update.refresh && refresh!(tree, models)
     sample_leafs!(update.temp_messages, tree, x -> [models], update.frequency_sampler)
     return update.bayes_update(tree, models, partition_list = partition_list)
 end 
