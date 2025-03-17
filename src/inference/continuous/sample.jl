@@ -71,9 +71,9 @@ Base.show(io::IO, r::RootAcceptanceRatio) = print(io, "position=$(r.position), s
 
 Implements the metropolis algorithm for the global Gaussian parameters [μ, ν], where the root state of each clonotype is ~ N(μ, exp(ν)), and updates the root position by `MolecularEvolution.UniformRootPositionSample` if `position = true`. It also holds the acceptance ratio `acc_ratio` in an `RootAcceptanceRatio` struct.
 # Constructor
-    GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, radius::Float64,consecutive::Int64; position::Bool = true)
+    GaussianStateSample(proposal::ContinuousMultivariateDistribution, prior::ContinuousMultivariateDistribution, radius::Float64, consecutive::Int64; position::Bool = true)
 
-Allows you to specify multivariate proposal and prior distributions for [μ, ν]. `consecutive` is the number of consecutive updates of the root (state *and* position) per MCMC iteration. radius (∈ [0,1]) scales tree's total branch length to determine local proposal radius for root position. 
+Allows you to specify multivariate proposal and prior distributions for [μ, ν]. `consecutive` is the number of consecutive updates of the root (state *and/or* position) per MCMC iteration. `radius` (∈ [0,1]) scales tree's total branch length to determine local proposal radius for root position.
 """
 mutable struct GaussianStateSample{T0, T1<:ContinuousMultivariateDistribution, T2<:ContinuousMultivariateDistribution} <: MolecularEvolution.UniformRootPositionSample
     acc_ratio::RootAcceptanceRatio
@@ -92,7 +92,7 @@ mutable struct GaussianStateSample{T0, T1<:ContinuousMultivariateDistribution, T
     ) where {T1<:ContinuousMultivariateDistribution,T2<:ContinuousMultivariateDistribution}
         @assert length(proposal) == length(prior) == 2 "Proposal and prior must have exactly 2 dimensions"
         @assert 0 <= radius <= 1 "Radius must be in [0, 1]"
-        new{position,T1,T2}(RootAcceptanceRatio(), proposal, prior, IndependentGaussiansPartition(0), radius,consecutive, false)
+        new{position,T1,T2}(RootAcceptanceRatio(), proposal, prior, IndependentGaussiansPartition(0), radius, consecutive, false)
     end
 end
 
@@ -195,7 +195,6 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
     ContinuousUpdate(; <keyword arguments>)
 
 # Keyword Arguments
-- `position::Bool=true`: whether to update the root position.
 - `branchlength_sampler::MolecularEvolution.BranchlengthSampler=Phylotrajectories.default_branchlength_sampler()`: the proposal and prior distributions for branch length updates in MCMC.
 - `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
 - `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
@@ -216,10 +215,9 @@ struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
     refresh::Bool
 
     function ContinuousUpdate(;
-        position = true,
         branchlength_sampler = default_branchlength_sampler(),
         frequency_sampler = FrequencySampler(Normal()),
-        root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position),
+        root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1),
         mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),
         models = 1,
         refresh = false,
