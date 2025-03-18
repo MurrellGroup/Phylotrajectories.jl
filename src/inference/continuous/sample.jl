@@ -197,10 +197,10 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
 # Keyword Arguments
 - `branchlength_sampler::MolecularEvolution.BranchlengthSampler=Phylotrajectories.default_branchlength_sampler()`: the proposal and prior distributions for branch length updates in MCMC.
 - `frequency_sampler::FrequencySampler=FrequencySampler(Normal())`: the proposal distribution for frequency updates in MCMC.
-- `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1, position = position)`: the proposal and prior distributions for root updates in MCMC.
+- `root_sampler::GaussianStateSample=GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1)`: the proposal and prior distributions for root updates in MCMC.
 - `mean_drift_sampler::MeanDriftSampler=MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0)`: the proposal and prior distributions for mean drift updates in MCMC, and the variance drift of the Brownian motion.
 - `models::Int=1`: the number of consecutive models updates per MCMC iteration.
-- `refresh::Bool=true`: whether to refresh the messages in tree between update operations to ensure message consistency (for debugging purposes).
+- `refresh::Bool=false`: whether to refresh the messages in tree between update operations to ensure message consistency (for debugging purposes).
 
 !!! note
     To disable the sampling of the mean drift, one can set `models=0`.
