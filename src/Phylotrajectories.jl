@@ -1,7 +1,7 @@
 module Phylotrajectories
 
 using CSV,
-    DataFrames, MolecularEvolution, StatsBase, Distributions, Phylo, Plots, LinearAlgebra
+    DataFrames, MolecularEvolution, StatsBase, Distributions, Phylo, Plots, LinearAlgebra, ForwardBackward
 
 include("inference/inference.jl")
 include("importing.jl")
@@ -9,7 +9,8 @@ include("simulations.jl")
 include("recombination.jl")
 
 export tree_inference, import_count_matrix, sim_count_matrix, recombine
-export IndependentBrownianMotion, IndependentGaussiansPartition
+export IndependentBrownianMotion, IndependentGaussiansPartition, FBGaussianPartition, OrnsteinUhlenbeckModel
 export FrequencySampler, RootAcceptanceRatio, GaussianStateSample, MeanDriftSampler, ContinuousUpdate
-export DiscreteModel, ContinuousModel
+export OUVarianceSampler, OUContinuousUpdate, OUGaussianStateSample, OUThetaSampler, OUEqmuSampler
+export DiscreteModel, ContinuousModel, OUContinuousModel
 end
