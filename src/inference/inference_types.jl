@@ -1,4 +1,5 @@
 include("continuous/sample.jl") #we're importing this to make sure sampling types are defined
+#include("continuous/OUsample.jl") 
 
 abstract type InferenceModel end
 
@@ -102,6 +103,42 @@ struct ContinuousModel <: InferenceModel
 
     function ContinuousModel(;
         update = ContinuousUpdate(),
+        mean_drift = 0.0,
+        Ne = 1.0,
+        sample_rate = 10.0,
+        start_branch_length = 0.1,
+        n_samples = 10,
+        burn_in = 1000,
+        sample_interval = 10,
+        consecutive_root_samples = 10,
+    )
+        new(
+            update,
+            mean_drift,
+            Ne,
+            sample_rate,
+            start_branch_length,
+            n_samples,
+            burn_in,
+            sample_interval,
+            consecutive_root_samples,
+        )
+    end
+end
+
+struct OUContinuousModel <: InferenceModel
+    update::OUContinuousUpdate
+    mean_drift::Float64
+    Ne::Float64
+    sample_rate::Float64
+    start_branch_length::Float64
+    n_samples::Int
+    burn_in::Int
+    sample_interval::Int
+    consecutive_root_samples::Int
+
+    function OUContinuousModel(;
+        update = OUContinuousUpdate(),
         mean_drift = 0.0,
         Ne = 1.0,
         sample_rate = 10.0,
