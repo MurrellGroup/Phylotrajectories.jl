@@ -20,33 +20,40 @@ See [`ContinuousModel`](@ref) for model specification and parameters.
 function tree_inference(
     model::ContinuousModel,
     cluster_names::Vector{String},
-    cluster_clono_matrix::Matrix{Int64},
+    cluster_clono_matrix::Matrix{Int64};
+    newt = missing
 )
     @assert size(cluster_names, 1) == size(cluster_clono_matrix, 1)
     bm_model = IndependentBrownianMotion(model.mean_drift, 1.0)
     message_template = [IndependentGaussiansPartition(size(cluster_clono_matrix)[2])]
 
-    newt = sim_tree(size(cluster_clono_matrix)[1], model.Ne, model.sample_rate)
-    internal_message_init!(newt, message_template)
+    if ismissing(newt)
+        println("random tree")
+        newt = sim_tree(size(cluster_clono_matrix)[1], model.Ne, model.sample_rate)
+        internal_message_init!(newt, message_template)
 
-    for (i, n) in enumerate(reverse(getleaflist(newt)))
-        n.name = cluster_names[i]
-        n.message[1].vars .= 0.0
-        poisson_partition!(n.message[1], cluster_clono_matrix[i, :])
-    end
-
-    i = 1
-    for n in getnodelist(newt)
-        n.nodeindex = i
-        if !MolecularEvolution.isroot(n)
-            n.branchlength = model.start_branch_length
+        for (i, n) in enumerate(reverse(getleaflist(newt)))
+            n.name = cluster_names[i]
+            n.message[1].vars .= 0.0
+            poisson_partition!(n.message[1], cluster_clono_matrix[i, :])
         end
-        i += 1
+
+        i = 1
+        for n in getnodelist(newt)
+            n.nodeindex = i
+            if !MolecularEvolution.isroot(n)
+                n.branchlength = model.start_branch_length
+            end
+            i += 1
+        end
+    else
+        println("Using existing tree.")
     end
+
 
     ladderize!(newt)
     phylo_tree = get_phylo_tree(newt)
-    plot(
+    plot_init = plot(
         phylo_tree,
         showtips = true,
         tipfont = 6,
@@ -57,13 +64,13 @@ function tree_inference(
         markercolor = :black,
         size = (500, 500),
         title = "Starting Tree",
-    )
+    );
 
     println("Starting LL: ", log_likelihood!(newt, bm_model))
 
     push!(model.update.temp_messages, copy_message(newt.message))
 
-    trees, LLs, models = metropolis_sample(
+    trees, LLs, models, root_ps = metropolis_sample(
         model.update,
         newt,
         bm_model,
@@ -74,7 +81,7 @@ function tree_inference(
         collect_models = true,
     )
 
-    return newt, trees, LLs, models #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?
+     return plot_init, newt, trees, LLs, models, root_ps, model.update.bayes_update #this is more of a MolEv concern, but I think we're interested in the Log posterior instead of LL?
 end
 
 #The message-preserving algorithm is copy-pasted from branchlength/nni_optim! with some minor tweaks that does the leaf sampling.
