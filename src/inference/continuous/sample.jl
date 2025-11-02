@@ -209,40 +209,6 @@ Updates the leaf frequencies, phylogenetic tree, root state and position, and me
 !!! note
     `GaussianStateSample` also updates the root position by default. See [`GaussianStateSample`](@ref) for more details.
 """
-# struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
-#     bayes_update::MolecularEvolution.StandardUpdate
-#     frequency_sampler::FrequencySampler
-#     temp_messages::Vector{Vector{Partition}}
-#     refresh::Bool
-#     turnoff_leaf_sampler::Bool
-
-#     function ContinuousUpdate(;
-#         branchlength_sampler = default_branchlength_sampler(),
-#         frequency_sampler = FrequencySampler(Normal()),
-#         root_sampler = GaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1),
-#         mean_drift_sampler = MeanDriftSampler(Normal(), Normal(-0.3, 0.5), 1.0),
-#         models = 1,
-#         refresh = false,
-#         root_onoff = 1,
-#         nni_onoff = 1,
-#         branchlength_onoff = 1,
-#         turnoff_leaf_sampler = false
-#     )
-#         new(BayesUpdate(nni = nni_onoff, branchlength = branchlength_onoff, root = root_onoff, models = models, refresh = refresh, branchlength_sampler = branchlength_sampler, root_sampler = root_sampler, models_sampler = mean_drift_sampler), frequency_sampler, Vector{Vector{Partition}}(), refresh, turnoff_leaf_sampler)
-#     end
-# end
-
-# function (update::ContinuousUpdate)(tree::FelNode, models; partition_list = 1:length(tree.message))
-#     update.refresh && refresh!(tree, models)
-#     if update.turnoff_leaf_sampler
-#         println("No leaf sampling")
-#         return update.bayes_update(tree, models, partition_list = partition_list)
-#     else
-#         sample_leafs!(update.temp_messages, tree, x -> [models], update.frequency_sampler)
-#         return update.bayes_update(tree, models, partition_list = partition_list)
-#     end
-# end 
-
 struct ContinuousUpdate <: MolecularEvolution.AbstractUpdate
     bayes_update::MolecularEvolution.StandardUpdate
     temp_messages::Vector{Vector{Partition}}
