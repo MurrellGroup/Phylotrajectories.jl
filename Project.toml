@@ -1,7 +1,7 @@
 name = "Phylotrajectories"
 uuid = "85c2bcf0-676d-4e10-9b42-7fb9c3e18bdd"
-authors = ["nossleinad <maximilian.danielsson@gmail.com> and contributors"]
 version = "1.0.0-DEV"
+authors = ["nossleinad <maximilian.danielsson@gmail.com> and contributors"]
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -36,6 +36,7 @@ ColorSchemes = "3.30.0"
 Colors = "0.13.1"
 DPMeansClustering = "0.1.2"
 DataFrames = "1"
+DataFramesMeta = "0.15"
 Distributions = "0.25"
 ForwardBackward = "0.1.2"
 MolecularEvolution = "0.2.7"
