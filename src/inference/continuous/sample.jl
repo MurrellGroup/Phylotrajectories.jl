@@ -173,7 +173,7 @@ MolecularEvolution.proposal(modifier::MeanDriftSampler, curr_value::Float64) =
 MolecularEvolution.log_prior(modifier::MeanDriftSampler, x::Float64) =
     logpdf(modifier.mean_drift_prior, x)
 
-MolecularEvolution.check(modifier::MeanDriftSampler) = true
+# MolecularEvolution.check(modifier::MeanDriftSampler) = true
 
 function (update::MeanDriftSampler)(
     tree::FelNode,
@@ -349,7 +349,7 @@ MolecularEvolution.proposal(modifier::OUThetaSampler, curr_logtheta::Float64) =
 MolecularEvolution.log_prior(modifier::OUThetaSampler, logtheta::Float64) =
     logpdf(modifier.logtheta_prior, logtheta)
 
-MolecularEvolution.check(modifier::OUThetaSampler) = true
+# MolecularEvolution.check(modifier::OUThetaSampler) = true
 
 function (update::OUThetaSampler)(
     tree::FelNode,
@@ -391,7 +391,7 @@ MolecularEvolution.proposal(modifier::OUEqmuSampler, curr_value::Float64) =
 MolecularEvolution.log_prior(modifier::OUEqmuSampler, eqmu::Float64) =
     logpdf(modifier.eqmu_prior, eqmu)
 
-MolecularEvolution.check(modifier::OUEqmuSampler) = true
+# MolecularEvolution.check(modifier::OUEqmuSampler) = true
 
 function (update::OUEqmuSampler)(
     tree::FelNode,
