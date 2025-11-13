@@ -8,9 +8,14 @@ include("importing.jl")
 include("simulations.jl")
 include("recombination.jl")
 
+include("/home/masha/Phylotrajectories.jl/src/viz/plotting.jl")
+
 export tree_inference, import_count_matrix, sim_count_matrix, recombine
 export IndependentBrownianMotion, IndependentGaussiansPartition, FBGaussianPartition, OrnsteinUhlenbeckModel
 export FrequencySampler, RootAcceptanceRatio, GaussianStateSample, MeanDriftSampler, ContinuousUpdate
 export OUVarianceSampler, OUContinuousUpdate, OUGaussianStateSample, OUThetaSampler, OUEqmuSampler
 export DiscreteModel, ContinuousModel, OUContinuousModel
+
+export PlotTreeOnUmap, PlotTreeOnUmapNoAnimShadow, PlotTreeOnUmapNoAnim
+
 end
