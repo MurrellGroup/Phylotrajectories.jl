@@ -56,10 +56,7 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Pkg
-          Pkg.add(
-              name = "DPMeansClustering",
-              url  = "https://github.com/MurrellGroup/DPMeansClustering.jl",
-          )
+          Pkg.develop(PackageSpec(url = "https://github.com/MurrellGroup/DPMeansClustering.jl"))
           Pkg.develop(PackageSpec(path=pwd()))
           Pkg.instantiate()
       - uses: julia-actions/julia-buildpkg@v1
