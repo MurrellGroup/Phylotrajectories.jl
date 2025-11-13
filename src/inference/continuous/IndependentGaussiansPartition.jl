@@ -20,9 +20,9 @@ IndependentGaussiansPartition(n) =
 
 Base.length(g::IndependentGaussiansPartition) = length(g.means)
 
-function MolecularEvolution.states(g::IndependentGaussiansPartition) 
-    return 0
-end
+# function MolecularEvolution.states(g::IndependentGaussiansPartition) 
+#     return 0
+# end
 
 function Base.getindex(g::IndependentGaussiansPartition, i::Int)
     1 <= i <= length(g) || throw(BoundsError(g, i))

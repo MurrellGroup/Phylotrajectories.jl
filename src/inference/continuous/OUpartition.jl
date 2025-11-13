@@ -31,9 +31,9 @@ FBGaussianPartition(n::Int) =
 Base.length(g::FBGaussianPartition) = length(g.part.mu)
 Base.length(part::ForwardBackward.GaussianLikelihood) = length(part.mu)
 
-function MolecularEvolution.states(g::FBGaussianPartition) 
-    return 0
-end
+# function MolecularEvolution.states(g::FBGaussianPartition) 
+#     return 0
+# end
 
 function Base.getindex(g::FBGaussianPartition, i::Int)
     1 <= i <= length(g) || throw(BoundsError(g, i))
