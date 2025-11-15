@@ -1,3 +1,196 @@
+#################### OU MCMC tree inference ####################
+
+function MolecularEvolution.metropolis_sample(
+    update!::AbstractUpdate,
+    initial_tree::FelNode,
+    models,#::Vector{<:BranchModel},
+    num_of_samples;
+    partition_list = 1:length(initial_tree.message),
+    burn_in = 1000,
+    sample_interval = 10,
+    collect_LLs = false,
+    midpoint_rooting = false,
+    ladderize = false,
+    collect_models = false,
+    )
+
+    # The prior over the (log) of the branchlengths should be specified in bl_sampler. 
+    # Furthermore, a non-informative/uniform prior is assumed over the tree topolgies (excluding the branchlengths).
+
+    sample_LLs = Float64[]
+    samples = FelNode[]
+    sample_models = []
+    tree = initial_tree
+    iterations = burn_in + num_of_samples * sample_interval
+
+    #matrix to collect marginal_state_dict from nodes of sampled trees
+    root_params = []
+
+    for i = 1:iterations
+        # Updates the tree topolgy and branchlengths.
+        tree, models = update!(tree, models, partition_list = partition_list)
+        if isnothing(tree)
+            break
+        end
+
+        if (i - burn_in) % sample_interval == 0 && i > burn_in
+
+            if collect_models
+                push!(sample_models, collapse_models(update!, models))
+            end
+
+            if collect_LLs
+                push!(sample_LLs, log_likelihood!(tree, models, partition_list = partition_list))
+            end
+
+            push!(samples, deepcopy(tree))
+            push!(root_params, tree.parent_message[1][1][1:2])
+
+        end
+
+    end
+
+    if midpoint_rooting
+        for (i, sample) in enumerate(samples)
+            node, len = midpoint(sample)
+            samples[i] = reroot!(node, dist_above_child = len)
+        end
+    end
+
+    if ladderize
+        for sample in samples
+            ladderize!(sample)
+        end
+    end
+
+    if collect_LLs && collect_models
+        return samples, sample_LLs, sample_models, root_params
+    elseif collect_LLs && !collect_models
+        return samples, sample_LLs
+    elseif !collect_LLs && collect_models
+        return samples, sample_models
+    end
+
+
+    return samples
+end
+
+
+# Helper function to update leaf nodes
+function update_leaf_partition!(
+    node::FelNode,
+    digamma_values::Vector{Float64},
+    trigamma_values::Vector{Float64},
+    log_norm_const::Vector{Float64}
+)
+    # Create new GaussianLikelihood with the updated values
+    new_part = ForwardBackward.GaussianLikelihood(
+        copy(digamma_values),
+        copy(sqrt.(trigamma_values)),
+        copy(log_norm_const)
+    )
+    
+    # Update the message with a new FBGaussianPartition
+    node.message[1] = FBGaussianPartition(new_part)
+end
+
+"""
+    tree_inference(model::ContinuousModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64})
+
+Returns the initial tree, sampled trees, LLs of the sampled trees, and the mean drift of the sampled models.
+
+See [`ContinuousModel`](@ref) for model specification and parameters.
+"""
+
+function OU_MCMC_tree_inference(
+    model::OUContinuousModel,
+    cluster_names::Vector{String},
+    cluster_clono_matrix::Matrix{Int64};
+    newt = missing,
+    d=0.5, 
+    g=0.5,
+    eqtheta = 1.0,
+    eqmu = 1.5,
+    v = 1.0
+)
+    @assert size(cluster_names, 1) == size(cluster_clono_matrix, 1)
+    ou_model = Phylotrajectories.OrnsteinUhlenbeckModel(ForwardBackward.OrnsteinUhlenbeck(eqmu, v, eqtheta))
+    message_template = [FBGaussianPartition(size(cluster_clono_matrix)[2])]
+
+    # We add pseudocounts to zero counts to avoid numerical issues with the Poisson likelihood
+    if ismissing(newt)
+        println("Using random tree.")
+        newt = sim_tree(size(cluster_clono_matrix)[1], model.Ne, model.sample_rate)
+        cluster_clono_matrix_digamma = ifelse.(cluster_clono_matrix .== 0, cluster_clono_matrix .+ d, cluster_clono_matrix)
+        cluster_clono_matrix_trigamma = ifelse.(cluster_clono_matrix .== 0, cluster_clono_matrix .+ g, cluster_clono_matrix)
+
+        internal_message_init!(newt, message_template)
+
+        #Set the leaf names from the imported count matrix, and init the partitions based on the counts there
+        for (i, n) in enumerate(reverse(getleaflist(newt)))
+            n.name = cluster_names[i]
+
+            digamma_values = digamma.(cluster_clono_matrix_digamma[i, :])
+            trigamma_values = trigamma.(cluster_clono_matrix_trigamma[i, :])
+
+            update_leaf_partition!(n, digamma_values, trigamma_values, Float64.(cluster_clono_matrix[i, :]))
+        end
+
+        i = 1
+        for n in getnodelist(newt)
+            n.nodeindex = i
+            if !MolecularEvolution.isroot(n)
+                n.branchlength =  model.start_branch_length
+        end
+
+        i += 1
+        end
+
+        #Set the parent message.
+        update_leaf_partition!(newt, 
+        repeat([0.0]  , size(cluster_clono_matrix)[2]), 
+        repeat([1.0], size(cluster_clono_matrix)[2]), 
+        repeat([0.], size(cluster_clono_matrix)[2]))
+    else
+        println("Using existing tree.")
+    end
+
+    ladderize!(newt)
+    phylo_tree = get_phylo_tree(newt)
+    plot_init = plot(
+        phylo_tree,
+        showtips = true,
+        tipfont = 6,
+        markersize = 4.0,
+        markerstrokewidth = 0,
+        margins = 1Plots.cm,
+        linewidth = 1.5,
+        markercolor = :black,
+        size = (500, 500),
+        title = "Starting Tree",
+    );
+
+    println("Starting LL: ", log_likelihood!(newt, ou_model))
+
+    # push!(model.update.temp_messages, copy_message(newt.message))
+    print("Inference")
+    trees, LLs, models, root_ps = metropolis_sample(
+        model.update,
+        newt,
+        ou_model,
+        model.n_samples,
+        burn_in = model.burn_in,
+        sample_interval = model.sample_interval,
+        collect_LLs = true,
+        collect_models = true,
+    )
+
+    return plot_init, newt, trees, LLs, models, root_ps, model.update.bayes_update
+end
+
+
+#################### MCMC tree inference #################### 
+
 function poisson_partition!(
     dest::IndependentGaussiansPartition,
     observed_counts::Array{Int64,1},
