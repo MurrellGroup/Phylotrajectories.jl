@@ -10,11 +10,11 @@ using Test
             :TRB_cdr3aa,
             cluster_filters = ["Proliferating"],
         )
-        _, cluster_names2, count_matrix2 = import_count_matrix("data/Clone_counts_HDM.csv")
+        _, cluster_names2, _, count_matrix2 = import_count_matrix("data/Clone_counts_HDM.csv")
         @test cluster_names1 == cluster_names2
         @test count_matrix1 == count_matrix2
 
-        _, cluster_names3, count_matrix3 = import_count_matrix(
+        _, cluster_names3, _, count_matrix3 = import_count_matrix(
             "data/HDM_clone_data_l1_v2_1210_notcr_tmp.tsv",
             :Clonotype_tmp, #Consists of ints, want to be able to read this kind of data
             :cell_types,
@@ -25,7 +25,7 @@ using Test
     end
 
     @testset "inference" begin
-        _, cluster_names, count_matrix = import_count_matrix("data/Clone_counts_HDM.csv")
+        _, cluster_names, _, count_matrix = import_count_matrix("data/Clone_counts_HDM.csv")
         Random.seed!(1234)
 
         model = DiscreteModel(
@@ -58,7 +58,7 @@ using Test
         tree_inference(model_mcmc, cluster_names, count_matrix)
 
         model_cont = ContinuousModel(n_samples = 10, burn_in = 10, sample_interval = 10)
-        newtree2, trees, LLs2, models =
+        newtree2, trees, LLs2, models, root =
             tree_inference(model_cont, cluster_names, count_matrix)
 
         @testset "Continuous" begin
