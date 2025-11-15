@@ -8,7 +8,7 @@ include("importing.jl")
 include("simulations.jl")
 include("recombination.jl")
 
-include("/home/masha/Phylotrajectories.jl/src/viz/plotting.jl")
+include("viz/plotting.jl")
 
 export tree_inference, import_count_matrix, sim_count_matrix, recombine
 export IndependentBrownianMotion, IndependentGaussiansPartition, FBGaussianPartition, OrnsteinUhlenbeckModel
