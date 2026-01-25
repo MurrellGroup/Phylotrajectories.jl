@@ -44,7 +44,7 @@ function MolecularEvolution.metropolis_sample(
             end
 
             push!(samples, deepcopy(tree))
-            push!(root_params, tree.parent_message[1][1][1:2])
+            push!(root_params, tree.parent_message[1])
 
         end
 
@@ -102,7 +102,7 @@ Returns the initial tree, sampled trees, LLs of the sampled trees, and the mean 
 See [`ContinuousModel`](@ref) for model specification and parameters.
 """
 
-function OU_MCMC_tree_inference(
+function tree_inference(
     model::OUContinuousModel,
     cluster_names::Vector{String},
     cluster_clono_matrix::Matrix{Int64};
