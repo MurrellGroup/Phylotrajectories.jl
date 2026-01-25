@@ -62,10 +62,10 @@ function import_count_matrix(
         cdr3_column_name,
     )
     cluster_sizes = Dict(eachrow(combine(groupby(df, [clusters_column_name]), nrow => :count)))
-    return clono_info, names(count_matrix_df), cluster_sizes, Matrix(Matrix(count_matrix_df)'), df #Second Matrix call needed?
+    return clono_info, names(count_matrix_df), cluster_sizes, Matrix(Matrix(count_matrix_df)') #Second Matrix call needed?
 end
 
 function import_count_matrix(fname)
     count_matrix_df = CSV.read(fname, DataFrame)
-    return nothing, names(count_matrix_df), Matrix(Matrix(count_matrix_df)') #Second Matrix call needed?
+    return nothing, names(count_matrix_df), nothing, Matrix(Matrix(count_matrix_df)') #Second Matrix call needed?
 end
