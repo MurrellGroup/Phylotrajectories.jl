@@ -128,7 +128,7 @@ end
 
 struct OUContinuousModel <: InferenceModel
     update::OUContinuousUpdate
-    mean_drift::Float64
+#    mean_drift::Float64
     Ne::Float64
     sample_rate::Float64
     start_branch_length::Float64
@@ -139,7 +139,7 @@ struct OUContinuousModel <: InferenceModel
 
     function OUContinuousModel(;
         update = OUContinuousUpdate(),
-        mean_drift = 0.0,
+#        mean_drift = 0.0,
         Ne = 1.0,
         sample_rate = 10.0,
         start_branch_length = 0.1,
@@ -150,7 +150,7 @@ struct OUContinuousModel <: InferenceModel
     )
         new(
             update,
-            mean_drift,
+#            mean_drift,
             Ne,
             sample_rate,
             start_branch_length,

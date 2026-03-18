@@ -349,7 +349,7 @@ MolecularEvolution.proposal(modifier::OUThetaSampler, curr_logtheta::Float64) =
 MolecularEvolution.log_prior(modifier::OUThetaSampler, logtheta::Float64) =
     logpdf(modifier.logtheta_prior, logtheta)
 
-# MolecularEvolution.check(modifier::OUThetaSampler) = true
+MolecularEvolution.check(modifier::OUThetaSampler) = true
 
 function (update::OUThetaSampler)(
     tree::FelNode,
@@ -360,7 +360,6 @@ function (update::OUThetaSampler)(
     log_likelihood!(tree, models)
     return models
 end
-
 
 mutable struct OUEqmuSampler{
     T1<:ContinuousUnivariateDistribution,
@@ -439,11 +438,11 @@ struct OUContinuousUpdate <: MolecularEvolution.AbstractUpdate
     refresh::Bool
     function OUContinuousUpdate(;
         branchlength_sampler = default_branchlength_sampler(),
-        root_sampler = OUGaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-2, 1),
+        root_sampler = OUGaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-1, 1),
         ou_eqmu_sampler = OUEqmuSampler(Normal(), Normal(1.5, 1.0), 1.0, 0.1),
         ou_theta_sampler = OUThetaSampler(Normal(), Normal(), 1.5, 0.1),
         models = 1,
-        refresh = true,
+        refresh = true
     )
         composite_sampler = CompositeModelsUpdate(ou_eqmu_sampler, ou_theta_sampler)
 

@@ -172,7 +172,6 @@ function tree_inference(
 
     println("Starting LL: ", log_likelihood!(newt, ou_model))
 
-    # push!(model.update.temp_messages, copy_message(newt.message))
     print("Inference")
     trees, LLs, models, root_ps = metropolis_sample(
         model.update,
@@ -184,7 +183,6 @@ function tree_inference(
         collect_LLs = true,
         collect_models = true,
     )
-
     return plot_init, newt, trees, LLs, models, root_ps, model.update.bayes_update
 end
 
