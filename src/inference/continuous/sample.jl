@@ -349,7 +349,7 @@ MolecularEvolution.proposal(modifier::OUThetaSampler, curr_logtheta::Float64) =
 MolecularEvolution.log_prior(modifier::OUThetaSampler, logtheta::Float64) =
     logpdf(modifier.logtheta_prior, logtheta)
 
-MolecularEvolution.check(modifier::OUThetaSampler) = true
+# MolecularEvolution.check(modifier::OUThetaSampler) = true
 
 function (update::OUThetaSampler)(
     tree::FelNode,
