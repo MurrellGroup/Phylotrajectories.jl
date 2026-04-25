@@ -17,6 +17,8 @@ makedocs(;
         edit_link = "main",
         assets = String[],
     ),
+
+    warnonly = [:missing_docs],
     pages = [
         "Home" => "index.md",
         "Getting started" => "getting_started.md",

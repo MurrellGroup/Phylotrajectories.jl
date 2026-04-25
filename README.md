@@ -23,21 +23,25 @@ Pkg.add(url = "https://github.com/MurrellGroup/Phylotrajectories.jl")
 
 ## Quick start on the bundled simulated dataset
 
-The repository ships with a tiny simulated dataset under `examples/data/`
-and a runnable end-to-end notebook at
-[`examples/usage_example.ipynb`](examples/usage_example.ipynb).
+The repository ships with a tiny simulated count matrix under
+`examples/data/simulated_clone_data.csv` and a runnable end-to-end
+notebook at [`examples/usage_example.ipynb`](examples/usage_example.ipynb).
 
 ```julia
-using Phylotrajectories
+using Phylotrajectories, StatsBase
 
-clono_info, cluster_names, cluster_sizes, count_matrix = import_count_matrix(
-    "examples/data/simulated_clone_data.tsv",
-    :Clonotype, :cell_types, :TRB_cdr3aa,
+# Wide-form CSV: rows are clonotypes, columns are cell-type subsets.
+_, cluster_names, _, count_matrix = import_count_matrix(
+    "examples/data/simulated_clone_data.csv",
 )
+
+# Subsample for a quick demo
+sampled_indices = sample(1:size(count_matrix, 2), 750; replace = false)
+count_matrix = count_matrix[:, sampled_indices]
 
 plot_init, init_tree, trees, LLs, models, root_ps, upd =
     tree_inference(
-        OUContinuousModel(burn_in = 2_000, sample_interval = 50, n_samples = 200),
+        OUContinuousModel(burn_in = 5_000, sample_interval = 100, n_samples = 100),
         cluster_names, count_matrix;
         eqmu = 1.5, eqtheta = 0.1, v = 1.0, d = 0.5, g = 0.5,
     )
@@ -46,9 +50,8 @@ ladderize!.(trees)
 hip, node2logcred, node2support = HIPSTR(trees; getcred = true, getsupport = true)
 ```
 
-The notebook adds the HIPSTR credibility plot, the per-clone × per-node
-frequency matrix produced by `run_ou_and_build_clone_matrix`, and a UMAP
-overlay built with `PlotTreeOnUmap*`.
+The notebook also produces the diagnostic dashboard, a HIPSTR
+credibility-annotated tree, and a Newick of the consensus.
 
 ## Importing data
 

@@ -47,11 +47,14 @@ constructing the count matrix.
 ### Wide-form (already-pivoted CSV)
 
 A CSV whose columns are cell types and whose rows are clonotypes is
-ingested with the single-argument method:
+ingested with the single-argument method.  The bundled
+[`examples/data/simulated_clone_data.csv`](https://github.com/MurrellGroup/Phylotrajectories.jl/blob/main/examples/data/simulated_clone_data.csv)
+follows this shape — six cell-type subsets (`Subset1`…`Subset6`) across
+~1 900 clonotypes:
 
 ```julia
-clono_info, cluster_names, cluster_sizes, count_matrix =
-    import_count_matrix("data/Clone_counts_HDM.csv")
+_, cluster_names, _, count_matrix =
+    import_count_matrix("examples/data/simulated_clone_data.csv")
 ```
 
 In this case `clono_info` and `cluster_sizes` are `nothing`.
@@ -92,7 +95,8 @@ The keyword arguments to `tree_inference`:
 ## A complete example
 
 The [Worked example](example_workflow.md) page walks through the full
-OU-MCMC pipeline (HIPSTR consensus, posterior cloud, UMAP overlay,
-animated GIF) on the simulated dataset that ships with the package in
-`examples/data/`. The same pipeline also lives as a runnable Jupyter
-notebook at [`examples/usage_example.ipynb`](https://github.com/MurrellGroup/Phylotrajectories.jl/blob/main/examples/usage_example.ipynb).
+OU-MCMC pipeline — HIPSTR consensus, posterior cloud, diagnostic
+dashboard, and credibility-annotated tree — on the simulated dataset
+that ships with the package in `examples/data/simulated_clone_data.csv`.
+The same pipeline also lives as a runnable Jupyter notebook at
+[`examples/usage_example.ipynb`](https://github.com/MurrellGroup/Phylotrajectories.jl/blob/main/examples/usage_example.ipynb).

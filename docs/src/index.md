@@ -35,18 +35,21 @@ Pkg.add(url = "https://github.com/MurrellGroup/Phylotrajectories.jl")
 ## A 30-second tour
 
 ```julia
-using Phylotrajectories
+using Phylotrajectories, StatsBase
 
-# 1. read a long-form per-cell table (Barcode, cell_types, Clonotype, …)
-clono_info, cluster_names, cluster_sizes, count_matrix = import_count_matrix(
-    "examples/data/simulated_clone_data.tsv",
-    :Clonotype, :cell_types, :TRB_cdr3aa,
+# 1. read the bundled wide-form count matrix
+_, cluster_names, _, count_matrix = import_count_matrix(
+    "examples/data/simulated_clone_data.csv",
 )
 
-# 2. fit the OU model with MCMC
+# 2. (optional) subsample clonotypes for a quick demo
+sampled_indices = sample(1:size(count_matrix, 2), 750; replace = false)
+count_matrix = count_matrix[:, sampled_indices]
+
+# 3. fit the OU model with MCMC
 plot_init, init_tree, trees, LLs, models, root_ps, upd =
     tree_inference(
-        OUContinuousModel(n_samples = 200, burn_in = 2_000, sample_interval = 50),
+        OUContinuousModel(n_samples = 100, burn_in = 5_000, sample_interval = 100),
         cluster_names, count_matrix;
         eqmu = 1.5, eqtheta = 0.1, v = 1.0, d = 0.5, g = 0.5,
     )

@@ -33,7 +33,6 @@ Returns:
 
 If `outfile` is a string, writes the clone matrix as CSV.
 """
-
 function run_ou_and_build_clone_matrix(
     trees,
     models_tmp,
