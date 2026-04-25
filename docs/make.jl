@@ -17,7 +17,14 @@ makedocs(;
         edit_link = "main",
         assets = String[],
     ),
-    pages = ["Home" => "index.md", "Simulate a count matrix" => "simulations.md"],
+    pages = [
+        "Home" => "index.md",
+        "Getting started" => "getting_started.md",
+        "Model & parameters" => "models.md",
+        "Simulating a count matrix" => "simulations.md",
+        "Worked example" => "example_workflow.md",
+        "API reference" => "api.md",
+    ],
 )
 
 deploydocs(; repo = "github.com/MurrellGroup/Phylotrajectories.jl", devbranch = "main")
