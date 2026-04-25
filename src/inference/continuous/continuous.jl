@@ -43,8 +43,9 @@ function MolecularEvolution.metropolis_sample(
                 push!(sample_LLs, log_likelihood!(tree, models, partition_list = partition_list))
             end
 
-            push!(samples, deepcopy(tree))
-            push!(root_params, tree.parent_message[1])
+            sample = deepcopy(tree)
+            push!(samples, sample)
+            push!(root_params, sample.parent_message[1])
 
         end
 
@@ -153,6 +154,24 @@ function tree_inference(
         repeat([0.], size(cluster_clono_matrix)[2]))
     else
         println("Using existing tree.")
+    end
+
+    if model.tree_warmup_cycles > 0
+        println(
+            "Tree-only warmup: $(model.tree_warmup_cycles) cycles with fixed branch lengths and theta=$(eqtheta)",
+        )
+        warmup_update = with_update_counts(model.update; branchlength = 0, models = 0)
+        warmup_trees, warmup_LLs = metropolis_sample(
+            warmup_update,
+            newt,
+            ou_model,
+            1,
+            burn_in = max(model.tree_warmup_cycles - 1, 0),
+            sample_interval = 1,
+            collect_LLs = true,
+        )
+        newt = deepcopy(last(warmup_trees))
+        println("Warmup final LL: ", last(warmup_LLs))
     end
 
     ladderize!(newt)

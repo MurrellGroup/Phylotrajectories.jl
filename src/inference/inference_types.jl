@@ -132,6 +132,7 @@ struct OUContinuousModel <: InferenceModel
     Ne::Float64
     sample_rate::Float64
     start_branch_length::Float64
+    tree_warmup_cycles::Int
     n_samples::Int
     burn_in::Int
     sample_interval::Int
@@ -143,6 +144,7 @@ struct OUContinuousModel <: InferenceModel
         Ne = 1.0,
         sample_rate = 10.0,
         start_branch_length = 0.1,
+        tree_warmup_cycles = 0,
         n_samples = 10,
         burn_in = 1000,
         sample_interval = 10,
@@ -154,6 +156,7 @@ struct OUContinuousModel <: InferenceModel
             Ne,
             sample_rate,
             start_branch_length,
+            tree_warmup_cycles,
             n_samples,
             burn_in,
             sample_interval,

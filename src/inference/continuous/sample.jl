@@ -437,16 +437,23 @@ struct OUContinuousUpdate <: MolecularEvolution.AbstractUpdate
     temp_messages::Vector{Vector{Partition}}
     refresh::Bool
     function OUContinuousUpdate(;
-        branchlength_sampler = default_branchlength_sampler(),
-        root_sampler = OUGaussianStateSample(MvNormal(zeros(2), Diagonal([0.1, 0.1])), MvNormal(zeros(2), Diagonal([1.0, 0.1])), 1e-1, 1),
-        ou_eqmu_sampler = OUEqmuSampler(Normal(), Normal(1.5, 1.0), 1.0, 0.1),
-        ou_theta_sampler = OUThetaSampler(Normal(), Normal(), 1.5, 0.1),
+        nni = 1,
+        branchlength = 1,
+        root = 1,
         models = 1,
+        branchlength_sampler = BranchlengthSampler(Normal(0, 0.1), Normal(-1, 1)),
+        root_sampler = OUGaussianStateSample(MvNormal(zeros(2), Diagonal([0.01, 0.01])), 
+                                             MvNormal(zeros(2), Diagonal([1.0, 0.1])), 
+                            1e-1, 1),
+        ou_eqmu_sampler = OUEqmuSampler(Normal(0.0, 2.0), Normal(1.5, 1.0), 1.0, 0.1),
+        ou_theta_sampler = OUThetaSampler(Normal(0, 0.5), Normal(-1, 1), 1.5, 1.0),
         refresh = true
     )
         composite_sampler = CompositeModelsUpdate(ou_eqmu_sampler, ou_theta_sampler)
 
-        new(BayesUpdate(root = 1, 
+        new(BayesUpdate(nni = nni,
+                        branchlength = branchlength,
+                        root = root,
                         models = models, 
                         refresh = refresh, 
                         branchlength_sampler = branchlength_sampler, 
@@ -460,6 +467,28 @@ end
 function (update::OUContinuousUpdate)(tree::FelNode, models; partition_list = 1:length(tree.message))
     update.refresh && refresh!(tree, models)
     return update.bayes_update(tree, models, partition_list = partition_list)
+end
+
+function with_update_counts(
+    update::OUContinuousUpdate;
+    nni = update.bayes_update.nni,
+    branchlength = update.bayes_update.branchlength,
+    root = update.bayes_update.root,
+    models = update.bayes_update.models,
+)
+    bayes_update = update.bayes_update
+    models_update = bayes_update.models_update
+    return OUContinuousUpdate(
+        nni = nni,
+        branchlength = branchlength,
+        root = root,
+        models = models,
+        branchlength_sampler = deepcopy(bayes_update.branchlength_modifier),
+        root_sampler = deepcopy(bayes_update.root_update),
+        ou_eqmu_sampler = deepcopy(models_update.eqmu_sampler),
+        ou_theta_sampler = deepcopy(models_update.theta_sampler),
+        refresh = update.refresh,
+    )
 end
 
 MolecularEvolution.collapse_models(::OUContinuousUpdate, x::OrnsteinUhlenbeckModel) = [x.process.θ, x.process.v, x.process.μ]
