@@ -126,6 +126,33 @@ struct ContinuousModel <: InferenceModel
     end
 end
 
+"""
+    OUContinuousModel(; <keyword arguments>)
+
+Frequencies diffuse along the tree under an Ornstein-Uhlenbeck process —
+a Brownian motion with mean-reversion towards an equilibrium mean. The
+posterior over topology, branch lengths and OU parameters is sampled via
+the Metropolis algorithm.
+
+# Keyword Arguments
+- `update::OUContinuousUpdate=OUContinuousUpdate()`: characterises an
+  MCMC iteration (mix of NNI, branch-length, root and parameter moves).
+- `Ne::Float64=1.0`: initial tree's effective population size.
+- `sample_rate::Float64=10.0`: initial tree's sample rate.
+- `start_branch_length::Float64=0.1`: initial non-root branch lengths.
+- `tree_warmup_cycles::Int=0`: pre-burn-in iterations during which only
+  the topology is updated. Lets the tree relax before parameter updates.
+- `n_samples::Int=10`: number of MCMC samples to retain.
+- `burn_in::Int=1000`: iterations discarded as burn-in.
+- `sample_interval::Int=10`: thinning interval between retained samples.
+- `consecutive_root_samples::Int=10`: number of consecutive root state
+  proposals per MCMC iteration.
+
+`tree_inference(::OUContinuousModel, cluster_names, count_matrix; …)`
+additionally accepts `eqmu`, `eqtheta`, `v` (initial OU parameters),
+`d`, `g` (digamma/trigamma pseudo-counts for zero entries), and `newt`
+(an optional pre-built starting tree).
+"""
 struct OUContinuousModel <: InferenceModel
     update::OUContinuousUpdate
 #    mean_drift::Float64

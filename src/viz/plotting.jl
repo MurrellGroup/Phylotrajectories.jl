@@ -31,6 +31,19 @@ function PlotNode(p, node, coord)
 end
 
 
+"""
+    PlotTreeOnUmap(tree, model, p) -> (marg_coord, anim)
+
+Project `tree` onto the existing 2-D plot `p` (e.g. a UMAP scatter)
+using the marginal node positions implied by the 2-component
+`model::Vector{<:BranchModel}`. Returns the per-node marginal
+coordinates and a `Plots.@animate` object that incrementally adds nodes
+and branches — useful with `Plots.gif` for an animated tree walk.
+
+See also [`PlotTreeOnUmapNoAnim`](@ref) (solid static rendering) and
+[`PlotTreeOnUmapNoAnimShadow`](@ref) (faint shadow lines, for posterior
+clouds).
+"""
 function PlotTreeOnUmap(tree, model, p)
     for (i, n) in enumerate(getnodelist(tree))
         n.nodeindex = i
@@ -63,6 +76,13 @@ function PlotTreeOnUmap(tree, model, p)
 end
 
 
+"""
+    PlotTreeOnUmapNoAnimShadow(tree, model, p) -> (marg_coord, p)
+
+Static, transparent variant of [`PlotTreeOnUmap`](@ref). Adds the tree's
+branches to the existing plot `p` as faint, alpha-blended grey lines —
+intended for stacking many posterior trees on top of a UMAP scatter.
+"""
 function PlotTreeOnUmapNoAnimShadow(tree, model, p)
     for (i, n) in enumerate(getnodelist(tree))
         n.nodeindex = i
@@ -90,6 +110,14 @@ function PlotTreeOnUmapNoAnimShadow(tree, model, p)
 end
 
 
+"""
+    PlotTreeOnUmapNoAnim(tree, model, p) -> (marg_coord, p)
+
+Static, opaque variant of [`PlotTreeOnUmap`](@ref). Draws the tree as
+solid black branches with coloured nodes (root in red, internal in blue,
+leaves in black) on top of the supplied 2-D plot `p` — typically used to
+overlay a HIPSTR consensus tree on a UMAP.
+"""
 function PlotTreeOnUmapNoAnim(tree, model, p)
 
     for (i, n) in enumerate(getnodelist(tree))

@@ -182,6 +182,21 @@ function VectorOfDistances(tree)
 end
 
 ### _______________ Metrics ____________________
+"""
+    SimComparison(newtree, oldtree) -> (pearson_cor, spearman_cor, n_split_diff)
+
+Compare an inferred tree (`newtree`) against a ground-truth tree
+(`oldtree`). Returns:
+
+- `pearson_cor`  — Pearson correlation between the pairwise leaf-distance
+  vectors of the two trees,
+- `spearman_cor` — Spearman correlation of the same,
+- `n_split_diff` — total number of internal splits present in one tree
+  but not the other (rooted comparison).
+
+Useful for benchmarking inference accuracy on simulated data — see
+[`sim_count_matrix`](@ref).
+"""
 function SimComparison(newtree, oldtree)
     x = VectorOfDistances(newtree);
     y = VectorOfDistances(oldtree);

@@ -46,6 +46,35 @@ function import_count_dataframe(
     pivot_df[:, Not([clusters_column_name, cdr3_column_name])]
 end
 
+"""
+    import_count_matrix(fname, clone_column_name, clusters_column_name, cdr3_column_name;
+                        cluster_filters = [""])
+    import_count_matrix(fname)
+
+Read a clonotype-by-cell-type count matrix from disk.
+
+The first method ingests a **long-form** TSV — one row per cell — with
+columns for the clonotype ID (`clone_column_name`), the cell-type label
+(`clusters_column_name`) and the TRB CDR3 amino-acid sequence
+(`cdr3_column_name`). The data are pivoted into a `cell_types × clonotypes`
+integer matrix.  The optional `cluster_filters` keyword removes cells whose
+cluster appears in the supplied vector before pivoting.
+
+The second method ingests an already-pivoted **wide-form** CSV whose
+columns are cell-types and whose rows are clonotypes.
+
+# Returns
+A 4-tuple `(clono_info, cluster_names, cluster_sizes, count_matrix)` where:
+
+- `clono_info::DataFrame` (or `nothing` for the wide-form method) maps
+  each cell type to the set of TRB CDR3 strings observed in it,
+- `cluster_names::Vector{String}` are the cell-type labels (rows of the
+  count matrix),
+- `cluster_sizes::Dict` (or `nothing`) maps each cell type to its total
+  cell count,
+- `count_matrix::Matrix{Int64}` is the integer count matrix used by the
+  `tree_inference` family of functions.
+"""
 function import_count_matrix(
     fname,
     clone_column_name::Symbol,

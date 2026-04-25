@@ -96,13 +96,35 @@ function update_leaf_partition!(
 end
 
 """
-    tree_inference(model::ContinuousModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64})
+    tree_inference(model::OUContinuousModel, cluster_names::Vector{String}, cluster_clono_matrix::Matrix{Int64};
+                   newt = missing, eqmu = 1.5, eqtheta = 1.0, v = 1.0,
+                   d = 0.5, g = 0.5)
 
-Returns the initial tree, sampled trees, LLs of the sampled trees, and the mean drift of the sampled models.
+Sample the joint posterior over topology, branch lengths and OU parameters
+for the supplied count matrix. Frequencies diffuse along the tree under an
+Ornstein–Uhlenbeck process: a Brownian motion with mean-reversion towards
+an equilibrium.
 
-See [`ContinuousModel`](@ref) for model specification and parameters.
+# Returns
+A 7-tuple `(plot_init, init_tree, trees, LLs, models, root_ps, upd)`:
+
+- `plot_init` — `Plots.Plot` of the starting tree,
+- `init_tree` — `FelNode` actually used to start MCMC,
+- `trees`     — `Vector{FelNode}` of posterior topology samples,
+- `LLs`       — log-likelihoods at the sampled points,
+- `models`    — sampled `(θ, v, μ)` triples,
+- `root_ps`   — sampled root state distributions,
+- `upd`       — the `Update` object holding acceptance ratios and proposal stats.
+
+# Keyword arguments
+- `newt`     — optional pre-built starting tree.
+- `eqmu`, `eqtheta`, `v` — initial OU parameter values (equilibrium mean,
+  mean-reversion strength, variance).
+- `d`, `g`   — pseudo-counts added to zero entries before the digamma /
+  trigamma transforms used to seed leaf Gaussian likelihoods.
+
+See [`OUContinuousModel`](@ref) for model specification and parameters.
 """
-
 function tree_inference(
     model::OUContinuousModel,
     cluster_names::Vector{String},
