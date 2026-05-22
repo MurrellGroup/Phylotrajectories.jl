@@ -87,7 +87,7 @@ function update_leaf_partition!(
     # Create new GaussianLikelihood with the updated values
     new_part = ForwardBackward.GaussianLikelihood(
         copy(digamma_values),
-        copy(sqrt.(trigamma_values)),
+        copy(trigamma_values),
         copy(log_norm_const)
     )
     
