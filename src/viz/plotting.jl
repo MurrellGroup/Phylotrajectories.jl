@@ -83,7 +83,7 @@ Static, transparent variant of [`PlotTreeOnUmap`](@ref). Adds the tree's
 branches to the existing plot `p` as faint, alpha-blended grey lines —
 intended for stacking many posterior trees on top of a UMAP scatter.
 """
-function PlotTreeOnUmapNoAnimShadow(tree, model, p)
+function PlotTreeOnUmapNoAnimShadow(tree, model, p; linealpha = 0.1, linewidth = 0.15)
     for (i, n) in enumerate(getnodelist(tree))
         n.nodeindex = i
     end
@@ -99,8 +99,8 @@ function PlotTreeOnUmapNoAnimShadow(tree, model, p)
                   [marg_coord[node.nodeindex][1], marg_coord[child.nodeindex][1]],
                   [marg_coord[node.nodeindex][2], marg_coord[child.nodeindex][2]],
                   marker=false,
-                  arrow=arr, alpha=0.1,
-                  linewidth = 0.15,
+                  arrow=arr, alpha=linealpha,
+                  linewidth = linewidth,
                   linecolor="#494848", 
                   label="")
         end
